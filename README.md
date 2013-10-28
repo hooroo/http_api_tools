@@ -5,7 +5,7 @@ Provides fast serialization/deserialization of models with simple model attribut
 ###Why?
 We tried using active model serializer and virtus for serialization and model attribute definition/coercion
 and found that they both performed quite badly. At this stage, this gem provides the stuff we need for a fraction
-of the performance footprint.
+of the performance footprint.  Performance is critial for this gem so any changes must be made with this in mind.
 
 Proper Docs to come.
 
