@@ -1,6 +1,14 @@
-# Hat
+# Hooroo API Tools (ACTUAL NAME TBD)
 
-TODO: Write a gem description
+Provides fast serialization/deserialization of models with simple model attribute definition in client apps.
+
+###Why?
+We tried using active model serializer and virtus for serialization and model attribute definition/coercion
+and found that they both performed quite badly. At this stage, this gem provides the stuff we need for a fraction
+of the performance footprint.
+
+Proper Docs to come.
+
 
 ## Installation
 
