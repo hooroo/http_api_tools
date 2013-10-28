@@ -173,16 +173,18 @@ module Hat
     def sideload_item(related, attr_name, type_key)
       serializer_class = serializer_class_for(related)
       includes = relation_includes.nested_includes_for(attr_name) || []
-      placeholder = { id: related.id }
-      identity_map.put(type_key, related.id, placeholder) #prevent circular serialization
+      # placeholder = { id: related.id }
+      # identity_map.put(type_key, related.id, placeholder) #prevent circular serialization
       hashed = serializer_class.new(related, result: result, identity_map: identity_map).includes(*includes).to_hash
       identity_map.put(type_key, related.id, hashed)
     end
 
     def add_sideload_data_from_identity_map
+      start = Time.now
       identity_map.to_hash.each do |key, type_map|
         result[key.pluralize.to_sym] = type_map.values
       end
+      puts "SIDELOAD DUMP: #{Time.now - start}"
     end
 
     def root_key_for_item(serializable)

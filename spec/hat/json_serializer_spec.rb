@@ -7,12 +7,14 @@ module Hat
     let(:employer) { Employer.new(id: 1, name: 'Hooroo') }
     let(:person) { Person.new(id: 2, first_name: 'Rob', last_name: 'Monie') }
     let(:skill) { Skill.new(id: 3, name: "JSON Serialization") }
+    let(:skill2) { Skill.new(id: 4, name: "JSON Serialization 2") }
 
     before do
       employer.people = [person]
       person.employer = employer
-      person.skills = [skill]
+      person.skills = [skill, skill2]
       skill.person = person
+      skill2.person = person
     end
 
     context "with a single top-level serializable object" do
@@ -47,7 +49,7 @@ module Hat
       context "with relations specified as includes" do
 
         let(:serialized) do
-          PersonSerializer.new(person).includes(:employer, :skills).as_json.with_indifferent_access
+          PersonSerializer.new(person).includes(:employer, {skills: [:person]}).as_json.with_indifferent_access
         end
 
         it "serializes relationships as ids" do
