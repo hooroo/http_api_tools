@@ -1,5 +1,8 @@
 require "active_support/core_ext/class/attribute"
 require "active_support/json"
+require 'active_support/core_ext/string/inflections'
+require 'hat/relation_includes'
+require 'hat/identity_map'
 
 module Hat
   module JsonSerializer
@@ -10,10 +13,14 @@ module Hat
       @serializable = serializable
       @result = options[:result] || {}
       @relation_includes = options[:relation_includes] || RelationIncludes.new([])
+      @identity_map = options[:identity_map] || IdentityMap.new
     end
 
     def to_json(*args)
+      JSON.fast_generate(as_json)
+    end
 
+    def as_json(*args)
       if serializable.kind_of?(Array) || is_active_record_relation?(serializable)
         root_key = root_key_for_collection
         result[root_key] = []
@@ -21,7 +28,7 @@ module Hat
           serializer_class = serializer_class_for(serializable_item)
           hashed = { id: serializable_item.id }
           result[root_key] << hashed
-          hashed.merge! serializer_class.new(serializable_item, result: result).includes(*relation_includes.includes).to_hash
+          hashed.merge! serializer_class.new(serializable_item, result: result, identity_map: identity_map).includes(*relation_includes.includes).to_hash
         end
       else
         serialized_hash = to_hash
@@ -29,13 +36,10 @@ module Hat
         result[root_key] = serialized_hash
       end
 
-      result[:meta] = {
-        type: root_key.to_s.singularize,
-        root_key: root_key
-      }
-
-      JSON.fast_generate(result)
-
+      add_sideload_data_from_identity_map
+      add_metadata(root_key)
+      puts result
+      result
     end
 
     def includes(*includes)
@@ -44,6 +48,8 @@ module Hat
     end
 
     protected
+
+    attr_accessor :identity_map
 
     def attributes
       self.class._attributes
@@ -58,18 +64,22 @@ module Hat
     end
 
     def to_hash
-
       hash = attribute_hash.merge(has_one_hash).merge(has_many_hash)
-
       sideload_has_ones
       sideload_has_manys
-
       hash
     end
 
     private
 
     attr_writer :relation_includes
+
+    def add_metadata(root_key)
+      result[:meta] = {
+        type: root_key.to_s.singularize,
+        root_key: root_key
+      }
+    end
 
     def attribute_hash
 
@@ -131,23 +141,13 @@ module Hat
         id_attr = "#{attr_name}_id".to_sym
 
         if relation_includes.include?(attr_name)
-
           if related = serializable.send(attr_name)
 
-            relation_json_key = attr_name.to_s.pluralize.to_sym
+            type_key = attr_name.to_s
 
-            unless hashed_relations = result[relation_json_key]
-              hashed_relations = result[relation_json_key] = []
-            end
-
-            unless hashed_relations.find { |relation| relation[:id] == related.id }
+            unless identity_map.get(type_key, related.id)
               related = serializable.send("#{attr_name}")
-              serializer_class = serializer_class_for(related)
-              #Need to add before serializing otherwise we'll get into infinite loops with cyclic dependencies
-              hashed = { id: related.id}
-              hashed_relations << hashed
-              includes = relation_includes.nested_includes_for(attr_name) || []
-              hashed.merge! serializer_class.new(related, result: result).includes(*includes).to_hash
+              sideload_item(related, attr_name, type_key)
             end
           end
         end
@@ -157,24 +157,31 @@ module Hat
     def sideload_has_manys
 
       has_manys.each do |attr_name|
+
         if relation_includes.include?(attr_name)
 
-          unless hashed_relations = result[attr_name.to_s.pluralize.to_sym]
-            hashed_relations = result[attr_name.to_s.pluralize.to_sym] = []
-          end
-
           has_many_relation = serializable.send("#{attr_name}") || []
+          type_key = attr_name.to_s.singularize
 
           has_many_relation.each do |related|
-            #Probably want to use the identity map from the deserializer for this
-            unless hashed_relations.find {|relation| relation[:id] == related.id}
-              serializer_class = serializer_class_for(related)
-              includes = relation_includes.nested_includes_for(attr_name) || []
-              hashed = serializer_class.new(related, result: result).includes(*includes).to_hash
-              hashed_relations << hashed
-            end
+            sideload_item(related, attr_name, type_key) unless identity_map.get(type_key, related.id)
           end
         end
+      end
+    end
+
+    def sideload_item(related, attr_name, type_key)
+      serializer_class = serializer_class_for(related)
+      includes = relation_includes.nested_includes_for(attr_name) || []
+      placeholder = { id: related.id }
+      identity_map.put(type_key, related.id, placeholder) #prevent circular serialization
+      hashed = serializer_class.new(related, result: result, identity_map: identity_map).includes(*includes).to_hash
+      identity_map.put(type_key, related.id, hashed)
+    end
+
+    def add_sideload_data_from_identity_map
+      identity_map.to_hash.each do |key, type_map|
+        result[key.pluralize.to_sym] = type_map.values
       end
     end
 

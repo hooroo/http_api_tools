@@ -21,6 +21,10 @@ module Hat
       self
     end
 
+    def to_hash
+      @identity_map
+    end
+
     def inspect
       identity_map.inspect
     end

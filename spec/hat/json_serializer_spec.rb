@@ -19,7 +19,7 @@ module Hat
 
       context "without any includes" do
 
-        let(:serialized) { JSON.parse(PersonSerializer.new(person).to_json).with_indifferent_access }
+        let(:serialized) { PersonSerializer.new(person).as_json.with_indifferent_access }
 
         it "serializes basic attributes" do
           expect(serialized[:person][:id]).to eql person.id
@@ -47,10 +47,7 @@ module Hat
       context "with relations specified as includes" do
 
         let(:serialized) do
-          JSON.parse(
-            PersonSerializer.new(person)
-            .includes(:employer, :skills).to_json
-          ).with_indifferent_access
+          PersonSerializer.new(person).includes(:employer, :skills).as_json.with_indifferent_access
         end
 
         it "serializes relationships as ids" do
