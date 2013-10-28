@@ -38,7 +38,7 @@ module Hat
 
       add_sideload_data_from_identity_map
       add_metadata(root_key)
-      puts result
+
       result
     end
 

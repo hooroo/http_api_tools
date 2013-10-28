@@ -9,7 +9,6 @@ module Hat
 
     def include(additional_includes)
       @includes.concat(additional_includes)
-      # puts includes.inspect
       self
     end
 
