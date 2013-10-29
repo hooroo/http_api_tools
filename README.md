@@ -239,3 +239,8 @@ spec for serialization that dumps some timings and creates a profile report in `
 Until we have a more robust way of tracking performance over time, please do some before and after tests against this when you make changes. Even small things have been found to introduce big performance issues. For example, we do lots of string singularization so we have cached these. We also started using `hash_with_indifferent_access` in the `IdentityMap` and found by removing it we gained significant savings.
 
 
+## To Do
+* Support serialization/deserialization of relationships with a key that differs from the type
+* Support polymorhic relationships
+
+
