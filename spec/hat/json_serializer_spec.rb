@@ -2,6 +2,7 @@ require 'spec_helper'
 require 'hat/json_serializer'
 
 module Hat
+
   describe JsonSerializer do
 
     let(:employer) { Employer.new(id: 1, name: 'Hooroo') }
@@ -110,88 +111,3 @@ module Hat
   end
 
 end
-
-class PersonSerializer
-
-  include Hat::JsonSerializer
-
-  attributes :id, :first_name, :last_name, :full_name
-  has_one :employer
-  has_many :skills
-
-  def full_name
-    "#{serializable.first_name} #{serializable.last_name}"
-  end
-
-end
-
-class EmployerSerializer
-
-  include Hat::JsonSerializer
-
-  attributes :id, :name
-  has_many :people
-
-end
-
-
-class SkillSerializer
-
-  include Hat::JsonSerializer
-
-  attributes :id, :name
-  has_one :person
-
-end
-
-class Person
-
-  attr_accessor :id, :first_name, :last_name, :employer, :skills
-
-  def initialize(attrs)
-    @id = attrs[:id]
-    @first_name = attrs[:first_name]
-    @last_name = attrs[:last_name]
-    @first_name = attrs[:first_name]
-    @employer = attrs[:employer]
-    @skils = attrs[:skills]
-  end
-
-  def employer_id
-    employer.id
-  end
-
-  def skill_ids
-    skills.map(&:id)
-  end
-
-end
-
-class Employer
-
-  attr_accessor :id, :name, :people
-
-  def initialize(attrs)
-    @id = attrs[:id]
-    @name = attrs[:name]
-    @people = attrs[:people]
-  end
-
-  def person_ids
-    people.map(&:id)
-  end
-
-end
-
-class Skill
-
-  attr_accessor :id, :name, :person
-
-  def initialize(attrs)
-    @id = attrs[:id]
-    @name = attrs[:name]
-    @person = attrs[:person]
-  end
-
-end
-

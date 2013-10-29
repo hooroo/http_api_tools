@@ -1,0 +1,1187 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>ruby-prof call tree</title>
+<style type="text/css">
+<!--
+body {
+    font-size:70%;
+    padding:0px;
+    margin:5px;
+    margin-right:0px;
+    margin-left:0px;
+    background: #ffffff;
+}
+ul {
+    margin-left:0px;
+    margin-top:0px;
+    margin-bottom:0px;
+    padding-left:0px;
+    list-style-type:none;
+}
+li {
+    margin-left:11px;
+    padding:0px;
+    white-space:nowrap;
+    border-top:1px solid #cccccc;
+    border-left:1px solid #cccccc;
+    border-bottom:none;
+}
+.thread {
+    margin-left:11px;
+    background:#708090;
+    padding-top:3px;
+    padding-left:12px;
+    padding-bottom:2px;
+    border-left:1px solid #CCCCCC;
+    border-top:1px solid #CCCCCC;
+    font-weight:bold;
+}
+.hidden {
+    display:none;
+    width:0px;
+    height:0px;
+    margin:0px;
+    padding:0px;
+    border-style:none;
+}
+.color01 { background:#adbdeb }
+.color05 { background:#9daddb }
+.color0 { background:#8d9dcb }
+.color1 { background:#89bccb }
+.color2 { background:#56e3e7 }
+.color3 { background:#32cd70 }
+.color4 { background:#a3d53c }
+.color5 { background:#c4cb34 }
+.color6 { background:#dcb66d }
+.color7 { background:#cda59e }
+.color8 { background:#be9d9c }
+.color9 { background:#cf947a }
+#commands {
+    font-size:10pt;
+    padding:10px;
+    margin-left:11px;
+    margin-bottom:0px;
+    margin-top:0px;
+    background:#708090;
+    border-top:1px solid #cccccc;
+    border-left:1px solid #cccccc;
+    border-bottom:none;
+}
+#titlebar {
+    font-size:10pt;
+    padding:10px;
+    margin-left:11px;
+    margin-bottom:0px;
+    margin-top:10px;
+    background:#8090a0;
+    border-top:1px solid #cccccc;
+    border-left:1px solid #cccccc;
+    border-bottom:none;
+}
+#help {
+    font-size:10pt;
+    padding:10px;
+    margin-left:11px;
+    margin-bottom:0px;
+    margin-top:0px;
+    background:#8090a0;
+    display:none;
+    border-top:1px solid #cccccc;
+    border-left:1px solid #cccccc;
+    border-bottom:none;
+}
+#sentinel {
+    height: 400px;
+    margin-left:11px;
+    background:#8090a0;
+    border-top:1px solid #cccccc;
+    border-left:1px solid #cccccc;
+    border-bottom:none;
+ }
+input { margin-left:10px; }
+-->
+</style>
+<script type="text/javascript">
+/*
+   Copyright (C) 2005,2009  Stefan Kaes
+   skaes@railsexpress.de
+*/
+
+function rootNode() {
+  return currentThread;
+}
+
+function hideUL(node) {
+  var lis = node.childNodes
+  var l = lis.length;
+  for (var i=0; i < l ; i++ ) {
+    hideLI(lis[i]);
+  }
+}
+
+function showUL(node) {
+  var lis = node.childNodes;
+  var l = lis.length;
+  for (var i=0; i < l ; i++ ) {
+    showLI(lis[i]);
+  }
+}
+
+function findUlChild(li){
+  var ul = li.childNodes[2];
+  while (ul && ul.nodeName != "UL") {
+    ul = ul.nextSibling;
+  }
+  return ul;
+}
+
+function isLeafNode(li) {
+  var img = li.firstChild;
+  return (img.src.indexOf('empty.png') > -1);
+}
+
+function hideLI(li) {
+  if (isLeafNode(li))
+    return;
+
+  var img = li.firstChild;
+  img.src = 'plus.png';
+
+  var ul = findUlChild(li);
+  if (ul) {
+    ul.style.display = 'none';
+    hideUL(ul);
+  }
+}
+
+function showLI(li) {
+  if (isLeafNode(li))
+    return;
+
+  var img = li.firstChild;
+  img.src = 'minus.png';
+
+  var ul = findUlChild(li);
+  if (ul) {
+    ul.style.display = 'block';
+    showUL(ul);
+  }
+}
+
+function toggleLI(li) {
+  var img = li.firstChild;
+  if (img.src.indexOf("minus.png")>-1)
+    hideLI(li);
+  else {
+    if (img.src.indexOf("plus.png")>-1)
+      showLI(li);
+  }
+}
+
+function aboveThreshold(text, threshold) {
+  var match = text.match(/\d+[.,]\d+/);
+  return (match && parseFloat(match[0].replace(/,/, '.'))>=threshold);
+}
+
+function setThresholdLI(li, threshold) {
+  var img = li.firstChild;
+  var text = img.nextSibling;
+  var ul = findUlChild(li);
+
+  var visible = aboveThreshold(text.nodeValue, threshold) ? 1 : 0;
+
+  var count = 0;
+  if (ul) {
+    count = setThresholdUL(ul, threshold);
+  }
+  if (count>0) {
+    img.src = 'minus.png';
+  }
+  else {
+    img.src = 'empty.png';
+  }
+  if (visible) {
+    li.style.display = 'block'
+  }
+  else {
+    li.style.display = 'none'
+  }
+  return visible;
+}
+
+function setThresholdUL(node, threshold) {
+  var lis = node.childNodes;
+  var l = lis.length;
+
+  var count = 0;
+  for ( var i = 0; i < l ; i++ ) {
+    count = count + setThresholdLI(lis[i], threshold);
+  }
+
+  var visible = (count > 0) ? 1 : 0;
+  if (visible) {
+    node.style.display = 'block';
+  }
+  else {
+    node.style.display = 'none';
+  }
+  return visible;
+}
+
+function toggleChildren(img, event) {
+  event.cancelBubble=true;
+
+  if (img.src.indexOf('empty.png') > -1)
+    return;
+
+  var minus = (img.src.indexOf('minus.png') > -1);
+
+  if (minus) {
+    img.src = 'plus.png';
+  }
+  else
+    img.src = 'minus.png';
+
+  var li = img.parentNode;
+  var ul = findUlChild(li);
+  if (ul) {
+    if (minus)
+      ul.style.display = 'none';
+    else
+      ul.style.display = 'block';
+  }
+  if (minus)
+    moveSelectionIfNecessary(li);
+}
+
+function showChildren(li) {
+  var img = li.firstChild;
+  if (img.src.indexOf('empty.png') > -1)
+    return;
+  img.src = 'minus.png';
+
+  var ul = findUlChild(li);
+  if (ul) {
+    ul.style.display = 'block';
+  }
+}
+
+function setThreshold() {
+ var tv = document.getElementById("threshold").value;
+ if (tv.match(/[0-9]+([.,][0-9]+)?/)) {
+   var f = parseFloat(tv.replace(/,/, '.'));
+   var threads = document.getElementsByName("thread");
+   var l = threads.length;
+   for ( var i = 0; i < l ; i++ ) {
+     setThresholdUL(threads[i], f);
+   }
+   var p = selectedNode;
+   while (p && p.style.display=='none')
+     p=p.parentNode.parentNode;
+   if (p && p.nodeName=="LI")
+    selectNode(p);
+ }
+ else {
+   alert("Please specify a decimal number as threshold value!");
+ }
+}
+
+function collapseAll(event) {
+  event.cancelBubble=true;
+  var threads = document.getElementsByName("thread");
+  var l = threads.length;
+  for ( var i = 0; i < l ; i++ ) {
+    hideUL(threads[i]);
+  }
+  selectNode(rootNode(), null);
+}
+
+function expandAll(event) {
+  event.cancelBubble=true;
+  var threads = document.getElementsByName("thread");
+  var l = threads.length;
+  for ( var i = 0; i < l ; i++ ) {
+    showUL(threads[i]);
+  }
+}
+
+function toggleHelp(node) {
+  var help = document.getElementById("help");
+  if (node.value == "Show Help") {
+    node.value = "Hide Help";
+    help.style.display = 'block';
+  }
+  else {
+    node.value = "Show Help";
+    help.style.display = 'none';
+  }
+}
+
+var selectedNode = null;
+var selectedColor = null;
+var selectedThread = null;
+
+function descendentOf(a,b){
+  while (a!=b && b!=null)
+    b=b.parentNode;
+  return (a==b);
+}
+
+function moveSelectionIfNecessary(node){
+  if (descendentOf(node, selectedNode))
+    selectNode(node, null);
+}
+
+function selectNode(node, event) {
+  if (event) {
+    event.cancelBubble = true;
+    thread = findThread(node);
+    selectThread(thread);
+  }
+  if (selectedNode) {
+    selectedNode.style.background = selectedColor;
+  }
+  selectedNode = node;
+  selectedColor = node.style.background;
+  selectedNode.style.background = "red";
+  selectedNode.scrollIntoView();
+  window.scrollBy(0,-400);
+}
+
+function moveUp(){
+  var p = selectedNode.previousSibling;
+  while (p && p.style.display == 'none')
+    p = p.previousSibling;
+  if (p && p.nodeName == "LI") {
+    selectNode(p, null);
+  }
+}
+
+function moveDown(){
+  var p = selectedNode.nextSibling;
+  while (p && p.style.display == 'none')
+    p = p.nextSibling;
+  if (p && p.nodeName == "LI") {
+    selectNode(p, null);
+  }
+}
+
+function moveLeft(){
+  var p = selectedNode.parentNode.parentNode;
+  if (p && p.nodeName=="LI") {
+    selectNode(p, null);
+  }
+}
+
+function moveRight(){
+  if (!isLeafNode(selectedNode)) {
+    showChildren(selectedNode);
+    var ul = findUlChild(selectedNode);
+    if (ul) {
+      selectNode(ul.firstChild, null);
+    }
+  }
+}
+
+function moveForward(){
+  if (isLeafNode(selectedNode)) {
+    var p = selectedNode;
+    while ((p.nextSibling == null || p.nextSibling.style.display=='none') && p.nodeName=="LI") {
+      p = p.parentNode.parentNode;
+    }
+    if (p.nodeName=="LI")
+      selectNode(p.nextSibling, null);
+  }
+  else {
+    moveRight();
+  }
+}
+
+function isExpandedNode(li){
+  var img = li.firstChild;
+  return(img.src.indexOf('minus.png')>-1);
+}
+
+function moveBackward(){
+  var p = selectedNode;
+  var q = p.previousSibling;
+  while (q != null && q.style.display=='none')
+    q = q.previousSibling;
+  if (q == null) {
+    p = p.parentNode.parentNode;
+  } else {
+    while (!isLeafNode(q) && isExpandedNode(q)) {
+      q = findUlChild(q).lastChild;
+      while (q.style.display=='none')
+        q = q.previousSibling;
+    }
+    p = q;
+  }
+  if (p.nodeName=="LI")
+    selectNode(p, null);
+}
+
+function moveHome() {
+  selectNode(currentThread);
+}
+
+var currentThreadIndex = null;
+
+function findThread(node){
+  while (node && node.parentNode.nodeName!="BODY") {
+    node = node.parentNode;
+  }
+  return node.firstChild;
+}
+
+function selectThread(node){
+  var threads = document.getElementsByName("thread");
+  currentThread = node;
+  for (var i=0; i<threads.length; i++) {
+    if (threads[i]==currentThread.parentNode)
+      currentThreadIndex = i;
+  }
+}
+
+function nextThread(){
+  var threads = document.getElementsByName("thread");
+  if (currentThreadIndex==threads.length-1)
+    currentThreadIndex = 0;
+  else
+    currentThreadIndex += 1
+  currentThread = threads[currentThreadIndex].firstChild;
+  selectNode(currentThread, null);
+}
+
+function previousThread(){
+  var threads = document.getElementsByName("thread");
+  if (currentThreadIndex==0)
+    currentThreadIndex = threads.length-1;
+  else
+    currentThreadIndex -= 1
+  currentThread = threads[currentThreadIndex].firstChild;
+  selectNode(currentThread, null);
+}
+
+function switchThread(node, event){
+  event.cancelBubble = true;
+  selectThread(node.nextSibling.firstChild);
+  selectNode(currentThread, null);
+}
+
+function handleKeyEvent(event){
+  var code = event.charCode ? event.charCode : event.keyCode;
+  var str = String.fromCharCode(code);
+  switch (str) {
+    case "a": moveLeft();  break;
+    case "s": moveDown();  break;
+    case "d": moveRight(); break;
+    case "w": moveUp();    break;
+    case "f": moveForward(); break;
+    case "b": moveBackward(); break;
+    case "x": toggleChildren(selectedNode.firstChild, event); break;
+    case "*": toggleLI(selectedNode); break;
+    case "n": nextThread(); break;
+    case "h": moveHome(); break;
+    case "p": previousThread(); break;
+  }
+}
+document.onkeypress=function(event){ handleKeyEvent(event) };
+
+window.onload=function(){
+  var images = document.getElementsByTagName("img");
+  for (var i=0; i<images.length; i++) {
+    var img = images[i];
+    if (img.className == "toggle") {
+      img.onclick = function(event){ toggleChildren(this, event); };
+    }
+  }
+  var divs = document.getElementsByTagName("div");
+  for (i=0; i<divs.length; i++) {
+    var div = divs[i];
+    if (div.className == "thread")
+      div.onclick = function(event){ switchThread(this, event) };
+  }
+  var lis = document.getElementsByTagName("li");
+  for (var i=0; i<lis.length; i++) {
+    lis[i].onclick = function(event){ selectNode(this, event); };
+  }
+  var threads = document.getElementsByName("thread");
+  currentThreadIndex = 0;
+  currentThread = threads[0].firstChild;
+  selectNode(currentThread, null);
+}
+</script>
+</head><body><div style="display: inline-block;">
+<div id="titlebar">
+Call tree for application <b>/Users/robmonie/.rbenv/versions/1.9.3-p448/bin/rspec </b><br/>
+Generated on 2013-10-29 15:08:30 +1100 with options {}<br/>
+</div>
+<div id="commands">
+<span style="font-size: 11pt; font-weight: bold;">Threshold:</span>
+<input value="1.0" size="3" id="threshold" type="text">
+<input value="Apply" onclick="setThreshold();" type="submit">
+<input value="Expand All" onclick="expandAll(event);" type="submit">
+<input value="Collapse All" onclick="collapseAll(event);" type="submit">
+<input value="Show Help" onclick="toggleHelp(this);" type="submit">
+</div>
+<div style="display: none;" id="help">
+<img src="empty.png"> Enter a decimal value <i>d</i> into the threshold field and click "Apply"
+to hide all nodes marked with time values lower than <i>d</i>.<br>
+<img src="empty.png"> Click on "Expand All" for full tree expansion.<br>
+<img src="empty.png"> Click on "Collapse All" to show only top level nodes.<br>
+<img src="empty.png"> Use a, s, d, w as in Quake or Urban Terror to navigate the tree.<br>
+<img src="empty.png"> Use f and b to navigate the tree in preorder forward and backwards.<br>
+<img src="empty.png"> Use x to toggle visibility of a subtree.<br>
+<img src="empty.png"> Use * to expand/collapse a whole subtree.<br>
+<img src="empty.png"> Use h to navigate to thread root.<br>
+<img src="empty.png"> Use n and p to navigate between threads.<br>
+<img src="empty.png"> Click on background to move focus to a subtree.<br>
+</div>
+<div class="thread">Thread: 70249252862940, Fiber: 70249301499600 (100.00% ~ 0.22124400000000044)</div><ul name="thread"><li class="color9" style="display:block"><img class="toggle" src="minus.png"> 100.00% (100.00%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/spec/hat/json_serializer_performance_spec.rb&line=29">Global#[No method]</a> [1 calls, 1 total]
+<ul><li class="color9" style="display:block"><img class="toggle" src="minus.png"> 99.87% (99.87%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=24">Hat::JsonSerializer#as_json</a> [1 calls, 1 total]
+<ul><li class="color9" style="display:block"><img class="toggle" src="minus.png"> 99.52% (99.65%) Array#each [1 calls, 2187 total]
+<ul><li class="color9" style="display:block"><img class="toggle" src="minus.png"> 92.92% (93.37%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=67">Hat::JsonSerializer#to_hash</a> [100 calls, 220 total]
+<ul><li class="color5" style="display:block"><img class="toggle" src="minus.png"> 53.62% (57.71%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=159">Hat::JsonSerializer#sideload_has_manys</a> [100 calls, 220 total]
+<ul><li class="color5" style="display:block"><img class="toggle" src="minus.png"> 53.37% (99.54%) Array#each [100 calls, 2187 total]
+<ul><li class="color5" style="display:block"><img class="toggle" src="minus.png"> 52.07% (97.56%) Array#each [100 calls, 2187 total]
+<ul><li class="color3" style="display:block"><img class="toggle" src="minus.png"> 31.20% (59.92%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=175">Hat::JsonSerializer#sideload_item</a> [100 calls, 120 total]
+<ul><li class="color1" style="display:block"><img class="toggle" src="minus.png"> 13.98% (44.79%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=67">Hat::JsonSerializer#to_hash</a> [100 calls, 220 total]
+<ul><li class="color05" style="display:block"><img class="toggle" src="plus.png"> 8.53% (61.01%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=159">Hat::JsonSerializer#sideload_has_manys</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color05" style="display:block"><img class="toggle" src="plus.png"> 8.27% (97.02%) Array#each [100 calls, 2187 total]
+<ul style="display:none"><li class="color05" style="display:block"><img class="toggle" src="plus.png"> 7.24% (87.52%) Array#each [100 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:block"><img class="toggle" src="plus.png"> 3.23% (44.58%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/identity_map.rb&line=10">Hat::IdentityMap#get</a> [2000 calls, 12000 total]
+<ul style="display:none"><li class="color01" style="display:block"><img class="toggle" src="empty.png"> 1.06% (32.71%) Hash#[] [3999 calls, 24238 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.03% (3.25%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=66">ActiveSupport::HashWithIndifferentAccess#default</a> [20 calls, 122 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (19.74%) Kernel#is_a? [20 calls, 5813 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (15.79%) Hash#default [20 calls, 245 total]
+</li></ul></li></ul></li></ul></li><li class="color01" style="display:block"><img class="toggle" src="plus.png"> 2.93% (40.42%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=175">Hat::JsonSerializer#sideload_item</a> [20 calls, 120 total]
+<ul style="display:none"><li class="color01" style="display:block"><img class="toggle" src="empty.png"> 1.12% (38.20%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=198">Hat::JsonSerializer#serializer_class_for</a> [20 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.93% (83.50%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/string/inflections.rb&line=107">String#titleize</a> [20 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.92% (98.64%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=127">ActiveSupport::Inflector#titleize</a> [20 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.47% (51.55%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=107">ActiveSupport::Inflector#humanize</a> [20 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.27% (57.81%) String#gsub [40 calls, 661 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.14% (49.92%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [40 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.08% (61.39%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [40 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.06% (65.59%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [40 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.02% (36.89%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [40 calls, 893 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (8.91%) Kernel#block_given? [40 calls, 1553 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (5.11%) String#downcase [40 calls, 446 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (2.97%) String#upcase [20 calls, 220 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.07% (14.76%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [20 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.04% (60.00%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [20 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.03% (60.22%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [20 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (50.00%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [20 calls, 893 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (9.68%) Kernel#block_given? [20 calls, 1553 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.04% (7.62%) Kernel#dup [20 calls, 547 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.01% (40.00%) Kernel#initialize_dup [20 calls, 987 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (43.75%) String#initialize_copy [20 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (10.00%) &lt;Class::String&gt;#allocate [20 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (2.10%) String#tr! [20 calls, 441 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (2.00%) String#gsub! [20 calls, 1104 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (1.52%) String#to_s [20 calls, 449 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.76%) Array#each [20 calls, 2187 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.41% (44.08%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=90">ActiveSupport::Inflector#underscore</a> [20 calls, 221 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.07% (17.71%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [20 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.04% (59.12%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [20 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.03% (67.02%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [20 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (33.33%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [20 calls, 893 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (5.66%) Kernel#block_given? [20 calls, 1553 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.06% (14.92%) String#gsub! [80 calls, 1104 total]
+</li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.04% (8.69%) Kernel#dup [20 calls, 547 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.02% (44.87%) Kernel#initialize_dup [20 calls, 987 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (45.71%) String#initialize_copy [20 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (19.23%) &lt;Class::String&gt;#allocate [20 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (3.23%) Regexp#to_s [20 calls, 221 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (1.89%) String#tr! [20 calls, 441 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (1.22%) String#downcase! [20 calls, 221 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.89%) String#to_s [20 calls, 449 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (1.87%) String#gsub [20 calls, 661 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.14% (12.37%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/string/inflections.rb&line=65">String#constantize</a> [20 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.12% (88.24%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=220">ActiveSupport::Inflector#constantize</a> [20 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.05% (37.04%) Enumerable#inject [20 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.04% (79.00%) Array#each [20 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (26.58%) Module#const_get [20 calls, 220 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (9.63%) String#split [20 calls, 221 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (5.93%) String#empty? [20 calls, 226 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (5.93%) Array#empty? [20 calls, 340 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (4.07%) Array#first [20 calls, 340 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (0.73%) Module#name [20 calls, 221 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (0.53%) Kernel#class [20 calls, 1321 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.82% (28.17%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=67">Hat::JsonSerializer#to_hash</a> [20 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.22% (27.25%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=102">Hat::JsonSerializer#has_one_hash</a> [20 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.17% (74.04%) Array#each [20 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.08% (48.37%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/spec/hat/support/spec_models.rb&line=48">Skill#person_id</a> [20 calls, 20 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.06% (72.47%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/object/try.rb&line=41">Object#try</a> [20 calls, 120 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (13.18%) Kernel#public_send [20 calls, 120 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (10.85%) Kernel#respond_to? [20 calls, 980 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (10.08%) Array#empty? [20 calls, 340 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (6.20%) Array#first [20 calls, 340 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (7.88%) Hash#[]= [20 calls, 967 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (4.35%) String#to_sym [20 calls, 443 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (3.80%) Kernel#respond_to? [20 calls, 980 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (3.26%) Symbol#to_s [20 calls, 1701 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.03% (14.69%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=59">Hat::JsonSerializer#has_ones</a> [20 calls, 880 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (30.14%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=59">Hat::JsonSerializer#has_ones</a> [20 calls, 880 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (10.96%) Kernel#class [20 calls, 1321 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.17% (20.72%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=139">Hat::JsonSerializer#sideload_has_ones</a> [20 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.12% (70.63%) Array#each [20 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.07% (61.05%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=15">Hat::RelationIncludes#include?</a> [20 calls, 320 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.03% (39.88%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=19">Hat::RelationIncludes#find</a> [20 calls, 440 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.02% (61.54%) Enumerable#find [20 calls, 440 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (27.50%) Array#each [20 calls, 2187 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.02% (32.52%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/object/blank.rb&line=19">Object#present?</a> [20 calls, 320 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (43.40%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/object/blank.rb&line=46">NilClass#blank?</a> [20 calls, 120 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (6.37%) String#to_sym [20 calls, 443 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (4.49%) Symbol#to_s [20 calls, 1701 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.03% (19.84%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=59">Hat::JsonSerializer#has_ones</a> [20 calls, 880 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (32.00%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=59">Hat::JsonSerializer#has_ones</a> [20 calls, 880 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (8.00%) Kernel#class [20 calls, 1321 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.16% (19.02%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=86">Hat::JsonSerializer#attribute_hash</a> [20 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.10% (61.38%) Array#each [20 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.03% (36.15%) Kernel#respond_to? [40 calls, 980 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (42.86%) Kernel#respond_to_missing? [40 calls, 540 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (15.02%) Hash#[]= [40 calls, 967 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.03% (21.33%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=55">Hat::JsonSerializer#attributes</a> [20 calls, 440 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (33.78%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=55">Hat::JsonSerializer#attributes</a> [20 calls, 440 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (18.92%) Kernel#class [20 calls, 1321 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.09% (11.13%) Hash#merge [40 calls, 440 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.04% (43.84%) Kernel#initialize_dup [40 calls, 987 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.02% (57.30%) Hash#initialize_copy [40 calls, 440 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (19.70%) &lt;Class::Hash&gt;#allocate [40 calls, 564 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.07% (8.22%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=126">Hat::JsonSerializer#has_many_hash</a> [20 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.03% (50.00%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=63">Hat::JsonSerializer#has_manys</a> [20 calls, 880 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (29.33%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=63">Hat::JsonSerializer#has_manys</a> [20 calls, 880 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (24.00%) Kernel#class [20 calls, 1321 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (7.33%) Array#each [20 calls, 2187 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.06% (6.74%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=159">Hat::JsonSerializer#sideload_has_manys</a> [20 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.03% (57.72%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=63">Hat::JsonSerializer#has_manys</a> [20 calls, 880 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (28.17%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=63">Hat::JsonSerializer#has_manys</a> [20 calls, 880 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (12.68%) Kernel#class [20 calls, 1321 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (13.01%) Array#each [20 calls, 2187 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.70% (23.86%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/identity_map.rb&line=16">Hat::IdentityMap#put</a> [20 calls, 120 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.65% (93.01%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=93">ActiveSupport::HashWithIndifferentAccess#[]=</a> [21 calls, 122 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.58% (89.42%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=244">ActiveSupport::HashWithIndifferentAccess#convert_value</a> [21 calls, 2782 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.53% (92.06%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/hash/indifferent_access.rb&line=8">Hash#with_indifferent_access</a> [21 calls, 123 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.52% (97.04%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=74">&lt;Class::ActiveSupport::HashWithIndifferentAccess&gt;#new_from_hash_copying_default</a> [21 calls, 123 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.47% (89.90%) Class#new [21 calls, 567 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.45% (95.45%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=57">ActiveSupport::HashWithIndifferentAccess#initialize</a> [21 calls, 123 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.38% (84.77%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=124">ActiveSupport::HashWithIndifferentAccess#update</a> [21 calls, 123 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.34% (89.34%) Hash#each_pair [21 calls, 123 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.11% (33.24%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=244">ActiveSupport::HashWithIndifferentAccess#convert_value</a> [60 calls, 2782 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.04% (32.66%) Kernel#is_a? [120 calls, 5813 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.09% (26.14%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=240">ActiveSupport::HashWithIndifferentAccess#convert_key</a> [60 calls, 782 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.02% (17.95%) Symbol#to_s [60 calls, 1701 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (17.44%) Kernel#kind_of? [60 calls, 2023 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (8.71%) ActiveSupport::HashWithIndifferentAccess#regular_writer [60 calls, 782 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (4.42%) Kernel#block_given? [60 calls, 1553 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (1.44%) Kernel#is_a? [21 calls, 5813 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (6.29%) Hash#initialize [21 calls, 124 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (1.52%) Kernel#is_a? [21 calls, 5813 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (1.45%) &lt;Class::Hash&gt;#allocate [21 calls, 564 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.03% (6.53%) Kernel#tap [21 calls, 123 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (18.67%) Hash#default [21 calls, 245 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (18.67%) Hash#default= [21 calls, 123 total]
+</li></ul></li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (1.17%) Kernel#is_a? [21 calls, 5813 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.86%) Symbol#== [21 calls, 542 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.03% (4.24%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=240">ActiveSupport::HashWithIndifferentAccess#convert_key</a> [21 calls, 782 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (26.23%) Kernel#kind_of? [21 calls, 2023 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (1.11%) ActiveSupport::HashWithIndifferentAccess#regular_writer [21 calls, 782 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.01% (2.14%) Hash#[] [40 calls, 24238 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (15.15%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=66">ActiveSupport::HashWithIndifferentAccess#default</a> [1 calls, 122 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (40.00%) Hash#default [1 calls, 245 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (20.00%) Kernel#is_a? [1 calls, 5813 total]
+</li></ul></li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.09% (3.18%) Class#new [20 calls, 567 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.07% (72.33%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=12">Hat::JsonSerializer#initialize</a> [20 calls, 221 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.03% (46.31%) Class#new [20 calls, 567 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (26.09%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=6">Hat::RelationIncludes#initialize</a> [20 calls, 221 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (21.74%) &lt;Class::BasicObject&gt;#allocate [20 calls, 443 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (6.80%) &lt;Class::BasicObject&gt;#allocate [20 calls, 443 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.09% (3.12%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=26">Hat::RelationIncludes#nested_includes_for</a> [20 calls, 120 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.06% (66.83%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=19">Hat::RelationIncludes#find</a> [20 calls, 440 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.05% (76.30%) Enumerable#find [20 calls, 440 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.04% (78.64%) Array#each [20 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (14.81%) Symbol#== [20 calls, 542 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (13.58%) Kernel#kind_of? [20 calls, 2023 total]
+</li></ul></li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (6.44%) Kernel#kind_of? [20 calls, 2023 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.04% (1.44%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=46">Hat::JsonSerializer#includes</a> [20 calls, 221 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.02% (56.99%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=10">Hat::RelationIncludes#include</a> [20 calls, 221 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (20.75%) Array#concat [20 calls, 221 total]
+</li></ul></li></ul></li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.61% (7.40%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=15">Hat::RelationIncludes#include?</a> [100 calls, 320 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.30% (49.48%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=19">Hat::RelationIncludes#find</a> [100 calls, 440 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.23% (76.42%) Enumerable#find [100 calls, 440 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.18% (76.95%) Array#each [100 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.03% (14.97%) Kernel#kind_of? [100 calls, 2023 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (12.18%) Symbol#== [100 calls, 542 total]
+</li></ul></li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.22% (36.63%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/object/blank.rb&line=19">Object#present?</a> [100 calls, 320 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.15% (67.34%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/object/blank.rb&line=14">Object#blank?</a> [100 calls, 100 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.03% (22.16%) Kernel#respond_to? [100 calls, 980 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (17.96%) Symbol#empty? [100 calls, 100 total]
+</li></ul></li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.10% (1.21%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=211">Hat::JsonSerializer#singularize</a> [100 calls, 401 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.06% (0.72%) Symbol#to_s [200 calls, 1701 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.17% (1.95%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=63">Hat::JsonSerializer#has_manys</a> [100 calls, 880 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.05% (31.61%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=63">Hat::JsonSerializer#has_manys</a> [100 calls, 880 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (13.08%) Kernel#class [100 calls, 1321 total]
+</li></ul></li></ul></li><li class="color01" style="display:block"><img class="toggle" src="empty.png"> 1.30% (9.30%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=86">Hat::JsonSerializer#attribute_hash</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.99% (76.01%) Array#each [100 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.28% (28.32%) Kernel#respond_to? [400 calls, 980 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.08% (28.92%) Kernel#respond_to_missing? [300 calls, 540 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.15% (14.82%) Hash#[]= [400 calls, 967 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.09% (9.56%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/spec/hat/support/spec_serializers.rb&line=11">PersonSerializer#full_name</a> [100 calls, 100 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.17% (12.76%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=55">Hat::JsonSerializer#attributes</a> [100 calls, 440 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.06% (34.33%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=55">Hat::JsonSerializer#attributes</a> [100 calls, 440 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (12.26%) Kernel#class [100 calls, 1321 total]
+</li></ul></li></ul></li><li class="color01" style="display:block"><img class="toggle" src="empty.png"> 1.20% (8.56%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=126">Hat::JsonSerializer#has_many_hash</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.89% (74.23%) Array#each [100 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.21% (23.52%) Array#map [100 calls, 200 total]
+</li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.17% (19.25%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=211">Hat::JsonSerializer#singularize</a> [100 calls, 401 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.07% (41.01%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/string/inflections.rb&line=54">String#singularize</a> [1 calls, 3 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.07% (99.35%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=49">ActiveSupport::Inflector#singularize</a> [1 calls, 3 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.06% (92.21%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=331">ActiveSupport::Inflector#apply_inflections</a> [1 calls, 6 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.05% (71.83%) Array#each [1 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.02% (48.04%) String#sub! [43 calls, 191 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.01% (9.15%) Array#include? [1 calls, 206 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (7.69%) String#== [10 calls, 60 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (6.34%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (55.56%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (80.00%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (25.00%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [1 calls, 893 total]
+</li></ul></li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (2.82%) Kernel#dup [1 calls, 547 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (50.00%) Kernel#initialize_dup [1 calls, 987 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (50.00%) String#initialize_copy [1 calls, 447 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (2.11%) String#[] [1 calls, 6 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (1.41%) String#downcase [1 calls, 446 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.70%) String#empty? [1 calls, 226 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.70%) String#to_s [1 calls, 449 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (5.19%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (62.50%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (80.00%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [1 calls, 893 total]
+<ul style="display:none"></ul></li></ul></li></ul></li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.26%) Hash#[]= [1 calls, 967 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.07% (7.59%) Symbol#to_s [200 calls, 1701 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.04% (5.04%) String#to_sym [100 calls, 443 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.04% (4.58%) Hash#[]= [100 calls, 967 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (3.46%) Symbol#to_proc [100 calls, 200 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.17% (14.06%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=63">Hat::JsonSerializer#has_manys</a> [100 calls, 880 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.06% (33.33%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=63">Hat::JsonSerializer#has_manys</a> [100 calls, 880 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (9.68%) Kernel#class [100 calls, 1321 total]
+</li></ul></li></ul></li><li class="color01" style="display:block"><img class="toggle" src="empty.png"> 1.11% (7.97%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=102">Hat::JsonSerializer#has_one_hash</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.81% (72.36%) Array#each [100 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.37% (46.05%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/spec/hat/support/spec_models.rb&line=16">Person#employer_id</a> [100 calls, 100 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.29% (79.42%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/object/try.rb&line=41">Object#try</a> [100 calls, 120 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.03% (10.12%) Kernel#public_send [100 calls, 120 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (9.66%) Kernel#respond_to? [100 calls, 980 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (8.59%) Array#empty? [100 calls, 340 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (8.44%) Array#first [100 calls, 340 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.05% (5.61%) Hash#[]= [100 calls, 967 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.04% (5.16%) Symbol#to_s [100 calls, 1701 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.04% (5.05%) String#to_sym [100 calls, 443 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (3.87%) Kernel#respond_to? [100 calls, 980 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.17% (15.71%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=59">Hat::JsonSerializer#has_ones</a> [100 calls, 880 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.05% (28.17%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=59">Hat::JsonSerializer#has_ones</a> [100 calls, 880 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (16.54%) Kernel#class [100 calls, 1321 total]
+</li></ul></li></ul></li><li class="color01" style="display:block"><img class="toggle" src="empty.png"> 1.10% (7.86%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=139">Hat::JsonSerializer#sideload_has_ones</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.84% (76.06%) Array#each [100 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.60% (71.93%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=15">Hat::RelationIncludes#include?</a> [100 calls, 320 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.39% (65.19%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=19">Hat::RelationIncludes#find</a> [100 calls, 440 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.32% (82.81%) Enumerable#find [100 calls, 440 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.26% (80.50%) Array#each [100 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.06% (24.05%) Kernel#kind_of? [200 calls, 2023 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (9.00%) Symbol#== [100 calls, 542 total]
+</li></ul></li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.12% (19.32%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/object/blank.rb&line=19">Object#present?</a> [100 calls, 320 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.05% (38.91%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/object/blank.rb&line=46">NilClass#blank?</a> [100 calls, 120 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.04% (4.71%) String#to_sym [100 calls, 443 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (4.00%) Symbol#to_s [100 calls, 1701 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.16% (15.01%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=59">Hat::JsonSerializer#has_ones</a> [100 calls, 880 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.05% (31.78%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=59">Hat::JsonSerializer#has_ones</a> [100 calls, 880 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (14.25%) Kernel#class [100 calls, 1321 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.46% (3.32%) Hash#merge [200 calls, 440 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.23% (49.66%) Kernel#initialize_dup [200 calls, 987 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.13% (56.47%) Hash#initialize_copy [200 calls, 440 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.05% (11.10%) &lt;Class::Hash&gt;#allocate [200 calls, 564 total]
+</li></ul></li></ul></li><li class="color05" style="display:block"><img class="toggle" src="plus.png"> 9.72% (31.16%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/identity_map.rb&line=16">Hat::IdentityMap#put</a> [100 calls, 120 total]
+<ul style="display:none"><li class="color05" style="display:block"><img class="toggle" src="plus.png"> 9.51% (97.78%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=93">ActiveSupport::HashWithIndifferentAccess#[]=</a> [101 calls, 122 total]
+<ul style="display:none"><li class="color05" style="display:block"><img class="toggle" src="plus.png"> 9.18% (96.59%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=244">ActiveSupport::HashWithIndifferentAccess#convert_value</a> [101 calls, 2782 total]
+<ul style="display:none"><li class="color05" style="display:block"><img class="toggle" src="plus.png"> 8.96% (97.64%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/hash/indifferent_access.rb&line=8">Hash#with_indifferent_access</a> [101 calls, 123 total]
+<ul style="display:none"><li class="color05" style="display:block"><img class="toggle" src="plus.png"> 8.89% (99.17%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=74">&lt;Class::ActiveSupport::HashWithIndifferentAccess&gt;#new_from_hash_copying_default</a> [101 calls, 123 total]
+<ul style="display:none"><li class="color05" style="display:block"><img class="toggle" src="plus.png"> 8.64% (97.18%) Class#new [101 calls, 567 total]
+<ul style="display:none"><li class="color05" style="display:block"><img class="toggle" src="plus.png"> 8.52% (98.63%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=57">ActiveSupport::HashWithIndifferentAccess#initialize</a> [101 calls, 123 total]
+<ul style="display:none"><li class="color05" style="display:block"><img class="toggle" src="plus.png"> 8.29% (97.35%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=124">ActiveSupport::HashWithIndifferentAccess#update</a> [101 calls, 123 total]
+<ul style="display:none"><li class="color05" style="display:block"><img class="toggle" src="plus.png"> 8.11% (97.81%) Hash#each_pair [101 calls, 123 total]
+<ul style="display:none"><li class="color01" style="display:block"><img class="toggle" src="plus.png"> 5.93% (73.05%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=244">ActiveSupport::HashWithIndifferentAccess#convert_value</a> [600 calls, 2782 total]
+<ul style="display:none"><li class="color01" style="display:block"><img class="toggle" src="plus.png"> 4.56% (76.96%) Array#map! [100 calls, 100 total]
+<ul style="display:none"><li class="color01" style="display:block"><img class="toggle" src="plus.png"> 3.56% (78.14%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=244">ActiveSupport::HashWithIndifferentAccess#convert_value</a> [2000 calls, 2782 total]
+<ul style="display:none"><li class="color01" style="display:block"><img src="empty.png"> 1.03% (28.76%) Kernel#is_a? [4000 calls, 5813 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.33% (5.51%) Kernel#is_a? [1200 calls, 5813 total]
+</li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.19% (3.16%) Kernel#dup [100 calls, 547 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.08% (44.44%) Kernel#initialize_dup [100 calls, 987 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.03% (39.13%) Array#initialize_copy [100 calls, 100 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (12.08%) &lt;Class::Array&gt;#allocate [100 calls, 100 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.87% (10.72%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=240">ActiveSupport::HashWithIndifferentAccess#convert_key</a> [600 calls, 782 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.20% (23.02%) Symbol#to_s [600 calls, 1701 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.15% (17.41%) Kernel#kind_of? [600 calls, 2023 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.24% (2.92%) ActiveSupport::HashWithIndifferentAccess#regular_writer [600 calls, 782 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.15% (1.89%) Kernel#block_given? [600 calls, 1553 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (0.38%) Kernel#is_a? [101 calls, 5813 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.05% (0.55%) Hash#initialize [101 calls, 124 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (0.34%) Kernel#is_a? [101 calls, 5813 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (0.39%) &lt;Class::Hash&gt;#allocate [101 calls, 564 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.16% (1.80%) Kernel#tap [101 calls, 123 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.03% (19.44%) Hash#default [101 calls, 245 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (12.11%) Hash#default= [101 calls, 123 total]
+</li></ul></li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (0.24%) Symbol#== [101 calls, 542 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (0.23%) Kernel#is_a? [101 calls, 5813 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.13% (1.40%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=240">ActiveSupport::HashWithIndifferentAccess#convert_key</a> [101 calls, 782 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.03% (24.41%) Kernel#kind_of? [101 calls, 2023 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.05% (0.52%) ActiveSupport::HashWithIndifferentAccess#regular_writer [101 calls, 782 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.06% (0.62%) Hash#[] [200 calls, 24238 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (3.76%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=66">ActiveSupport::HashWithIndifferentAccess#default</a> [1 calls, 122 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (40.00%) Hash#default [1 calls, 245 total]
+</li></ul></li></ul></li></ul></li><li class="color01" style="display:block"><img class="toggle" src="plus.png"> 5.64% (18.08%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=198">Hat::JsonSerializer#serializer_class_for</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:block"><img class="toggle" src="plus.png"> 4.76% (84.30%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/string/inflections.rb&line=107">String#titleize</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:block"><img class="toggle" src="plus.png"> 4.68% (98.50%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=127">ActiveSupport::Inflector#titleize</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:block"><img class="toggle" src="plus.png"> 2.40% (51.34%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=107">ActiveSupport::Inflector#humanize</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:block"><img class="toggle" src="empty.png"> 1.36% (56.47%) String#gsub [200 calls, 661 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.69% (50.63%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [200 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.41% (59.76%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [200 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.28% (68.54%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [200 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.10% (34.83%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [200 calls, 893 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.05% (7.17%) Kernel#block_given? [200 calls, 1553 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.08% (5.56%) String#downcase [200 calls, 446 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.04% (3.20%) String#upcase [100 calls, 220 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.36% (14.92%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [100 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.21% (59.45%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [100 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.15% (68.22%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [100 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.05% (37.27%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [100 calls, 893 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (6.80%) Kernel#block_given? [100 calls, 1553 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.21% (8.65%) Kernel#dup [100 calls, 547 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.08% (38.91%) Kernel#initialize_dup [100 calls, 987 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.02% (29.61%) String#initialize_copy [100 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.04% (19.57%) &lt;Class::String&gt;#allocate [100 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.05% (2.24%) String#gsub! [100 calls, 1104 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (1.45%) String#tr! [100 calls, 441 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (1.17%) Array#each [100 calls, 2187 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (1.02%) String#to_s [100 calls, 449 total]
+</li></ul></li><li class="color01" style="display:block"><img class="toggle" src="empty.png"> 2.07% (44.26%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=90">ActiveSupport::Inflector#underscore</a> [100 calls, 221 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.36% (17.22%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [100 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.23% (63.80%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [100 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.15% (65.48%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [100 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.05% (34.55%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [100 calls, 893 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (8.10%) Kernel#block_given? [100 calls, 1553 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.30% (14.37%) String#gsub! [400 calls, 1104 total]
+</li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.18% (8.87%) Kernel#dup [100 calls, 547 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.08% (43.73%) Kernel#initialize_dup [100 calls, 987 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.03% (34.83%) String#initialize_copy [100 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (13.51%) &lt;Class::String&gt;#allocate [100 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.07% (3.20%) Regexp#to_s [100 calls, 221 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.04% (2.09%) String#tr! [100 calls, 441 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (1.50%) String#downcase! [100 calls, 221 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (1.07%) String#to_s [100 calls, 449 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.08% (1.73%) String#gsub [100 calls, 661 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.64% (11.43%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/string/inflections.rb&line=65">String#constantize</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.58% (89.34%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=220">ActiveSupport::Inflector#constantize</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.23% (40.42%) Enumerable#inject [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.17% (74.76%) Array#each [100 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.05% (30.65%) Module#const_get [100 calls, 220 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.06% (9.81%) String#split [100 calls, 221 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (5.18%) String#empty? [100 calls, 226 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (4.71%) Array#empty? [100 calls, 340 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (4.08%) Array#first [100 calls, 340 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.04% (0.78%) Module#name [100 calls, 221 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (0.44%) Kernel#class [100 calls, 1321 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.83% (2.67%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=26">Hat::RelationIncludes#nested_includes_for</a> [100 calls, 120 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.67% (80.05%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=19">Hat::RelationIncludes#find</a> [100 calls, 440 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.60% (89.30%) Enumerable#find [100 calls, 440 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.53% (89.61%) Array#each [100 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.11% (21.07%) Kernel#kind_of? [400 calls, 2023 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.04% (6.60%) Hash#keys [100 calls, 200 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (5.84%) Array#include? [100 calls, 206 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (4.91%) Symbol#== [100 calls, 542 total]
+</li></ul></li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (2.60%) Kernel#kind_of? [100 calls, 2023 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.47% (1.51%) Class#new [100 calls, 567 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.34% (73.13%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=12">Hat::JsonSerializer#initialize</a> [100 calls, 221 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.16% (45.14%) Class#new [100 calls, 567 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.05% (32.56%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=6">Hat::RelationIncludes#initialize</a> [100 calls, 221 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (18.60%) &lt;Class::BasicObject&gt;#allocate [100 calls, 443 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (6.62%) &lt;Class::BasicObject&gt;#allocate [100 calls, 443 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.22% (0.69%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=46">Hat::JsonSerializer#includes</a> [100 calls, 221 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.13% (60.67%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=10">Hat::RelationIncludes#include</a> [100 calls, 221 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.03% (26.55%) Array#concat [100 calls, 221 total]
+</li></ul></li></ul></li></ul></li><li class="color1" style="display:block"><img class="toggle" src="minus.png"> 15.71% (30.17%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/identity_map.rb&line=10">Hat::IdentityMap#get</a> [10000 calls, 12000 total]
+<ul><li class="color01" style="display:block"><img class="toggle" src="empty.png"> 5.13% (32.64%) Hash#[] [19999 calls, 24238 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.17% (3.37%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=66">ActiveSupport::HashWithIndifferentAccess#default</a> [100 calls, 122 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.03% (17.02%) Kernel#is_a? [100 calls, 5813 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (14.66%) Hash#default [100 calls, 245 total]
+</li></ul></li></ul></li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.87% (1.63%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=15">Hat::RelationIncludes#include?</a> [100 calls, 320 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.68% (78.45%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=19">Hat::RelationIncludes#find</a> [100 calls, 440 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.61% (89.85%) Enumerable#find [100 calls, 440 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.54% (87.67%) Array#each [100 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.11% (21.06%) Kernel#kind_of? [400 calls, 2023 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.05% (8.59%) Hash#keys [100 calls, 200 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (5.39%) Symbol#== [100 calls, 542 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (4.97%) Array#include? [100 calls, 206 total]
+</li></ul></li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.09% (10.72%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/object/blank.rb&line=19">Object#present?</a> [100 calls, 320 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.02% (22.82%) Hash#blank? [100 calls, 100 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.09% (0.18%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=211">Hat::JsonSerializer#singularize</a> [100 calls, 401 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.07% (0.13%) Symbol#to_s [200 calls, 1701 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.16% (0.30%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=63">Hat::JsonSerializer#has_manys</a> [100 calls, 880 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.05% (31.84%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=63">Hat::JsonSerializer#has_manys</a> [100 calls, 880 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (14.25%) Kernel#class [100 calls, 1321 total]
+</li></ul></li></ul></li><li class="color3" style="display:block"><img class="toggle" src="minus.png"> 37.22% (40.05%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=126">Hat::JsonSerializer#has_many_hash</a> [100 calls, 220 total]
+<ul><li class="color3" style="display:block"><img class="toggle" src="minus.png"> 36.92% (99.21%) Array#each [100 calls, 2187 total]
+<ul><li class="color3" style="display:block"><img src="empty.png"> 36.28% (98.28%) Array#map [100 calls, 200 total]
+</li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.14% (0.38%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=211">Hat::JsonSerializer#singularize</a> [100 calls, 401 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.04% (31.21%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/string/inflections.rb&line=54">String#singularize</a> [1 calls, 3 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.04% (96.94%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=49">ActiveSupport::Inflector#singularize</a> [1 calls, 3 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.04% (86.32%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=331">ActiveSupport::Inflector#apply_inflections</a> [1 calls, 6 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.02% (50.00%) Array#each [1 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (53.66%) String#sub! [15 calls, 191 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (13.41%) Array#include? [1 calls, 206 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (54.55%) String#== [10 calls, 60 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (9.76%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (62.50%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (80.00%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (25.00%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [1 calls, 893 total]
+</li></ul></li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (6.10%) Kernel#dup [1 calls, 547 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (60.00%) Kernel#initialize_dup [1 calls, 987 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (33.33%) String#initialize_copy [1 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (20.00%) &lt;Class::String&gt;#allocate [1 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (3.66%) String#[] [1 calls, 6 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (1.22%) String#downcase [1 calls, 446 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (1.22%) String#to_s [1 calls, 449 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (9.47%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (66.67%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (66.67%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (25.00%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [1 calls, 893 total]
+</li></ul></li></ul></li></ul></li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.64%) Hash#[]= [1 calls, 967 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.06% (0.17%) Symbol#to_s [200 calls, 1701 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.06% (0.15%) Hash#[]= [100 calls, 967 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (0.09%) String#to_sym [100 calls, 443 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (0.09%) Symbol#to_proc [100 calls, 200 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.16% (0.43%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=63">Hat::JsonSerializer#has_manys</a> [100 calls, 880 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.04% (27.65%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=63">Hat::JsonSerializer#has_manys</a> [100 calls, 880 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (16.76%) Kernel#class [100 calls, 1321 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.77% (0.83%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=86">Hat::JsonSerializer#attribute_hash</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.47% (60.65%) Array#each [100 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.16% (34.65%) Kernel#respond_to? [200 calls, 980 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.06% (34.72%) Kernel#respond_to_missing? [200 calls, 540 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.08% (17.04%) Hash#[]= [200 calls, 967 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.17% (21.54%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=55">Hat::JsonSerializer#attributes</a> [100 calls, 440 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.05% (31.44%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=55">Hat::JsonSerializer#attributes</a> [100 calls, 440 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (15.99%) Kernel#class [100 calls, 1321 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.42% (0.45%) Hash#merge [200 calls, 440 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.20% (47.05%) Kernel#initialize_dup [200 calls, 987 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.11% (53.76%) Hash#initialize_copy [200 calls, 440 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.06% (14.90%) &lt;Class::Hash&gt;#allocate [200 calls, 564 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.31% (0.34%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=102">Hat::JsonSerializer#has_one_hash</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.17% (52.97%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=59">Hat::JsonSerializer#has_ones</a> [100 calls, 880 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.05% (31.42%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=59">Hat::JsonSerializer#has_ones</a> [100 calls, 880 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (13.11%) Kernel#class [100 calls, 1321 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (8.39%) Array#each [100 calls, 2187 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.29% (0.31%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=139">Hat::JsonSerializer#sideload_has_ones</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.17% (59.40%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=59">Hat::JsonSerializer#has_ones</a> [100 calls, 880 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.05% (31.91%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=59">Hat::JsonSerializer#has_ones</a> [100 calls, 880 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (13.03%) Kernel#class [100 calls, 1321 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (7.90%) Array#each [100 calls, 2187 total]
+</li></ul></li></ul></li><li class="color01" style="display:block"><img class="toggle" src="plus.png"> 5.54% (5.57%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=198">Hat::JsonSerializer#serializer_class_for</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:block"><img class="toggle" src="plus.png"> 4.65% (84.01%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/string/inflections.rb&line=107">String#titleize</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:block"><img class="toggle" src="plus.png"> 4.58% (98.42%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=127">ActiveSupport::Inflector#titleize</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:block"><img class="toggle" src="plus.png"> 2.34% (51.04%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=107">ActiveSupport::Inflector#humanize</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:block"><img class="toggle" src="empty.png"> 1.32% (56.64%) String#gsub [200 calls, 661 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.68% (51.09%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [200 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.41% (60.59%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [200 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.27% (65.93%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [200 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.10% (35.79%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [200 calls, 893 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.05% (7.35%) Kernel#block_given? [200 calls, 1553 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.09% (6.59%) String#downcase [200 calls, 446 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (2.49%) String#upcase [100 calls, 220 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.34% (14.75%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [100 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.22% (62.65%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [100 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.14% (66.11%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [100 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.05% (36.39%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [100 calls, 893 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (8.13%) Kernel#block_given? [100 calls, 1553 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.18% (7.77%) Kernel#dup [100 calls, 547 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.08% (43.53%) Kernel#initialize_dup [100 calls, 987 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.04% (47.43%) String#initialize_copy [100 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (16.17%) &lt;Class::String&gt;#allocate [100 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.06% (2.44%) String#gsub! [100 calls, 1104 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.04% (1.55%) String#tr! [100 calls, 441 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (1.37%) Array#each [100 calls, 2187 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (1.16%) String#to_s [100 calls, 449 total]
+</li></ul></li><li class="color01" style="display:block"><img class="toggle" src="empty.png"> 2.04% (44.47%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=90">ActiveSupport::Inflector#underscore</a> [100 calls, 221 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.36% (17.71%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [100 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.22% (60.40%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [100 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.14% (65.56%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [100 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.05% (38.29%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [100 calls, 893 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (6.77%) Kernel#block_given? [100 calls, 1553 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.31% (15.24%) String#gsub! [400 calls, 1104 total]
+</li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.19% (9.30%) Kernel#dup [100 calls, 547 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.08% (41.53%) Kernel#initialize_dup [100 calls, 987 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.03% (43.68%) String#initialize_copy [100 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (15.99%) &lt;Class::String&gt;#allocate [100 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.07% (3.24%) Regexp#to_s [100 calls, 221 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.04% (1.91%) String#tr! [100 calls, 441 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (1.42%) String#to_s [100 calls, 449 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (1.40%) String#downcase! [100 calls, 221 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.08% (1.68%) String#gsub [100 calls, 661 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.67% (12.02%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/string/inflections.rb&line=65">String#constantize</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.59% (88.60%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=220">ActiveSupport::Inflector#constantize</a> [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.25% (42.19%) Enumerable#inject [100 calls, 220 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.17% (70.24%) Array#each [100 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.06% (32.56%) Module#const_get [100 calls, 220 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.06% (9.65%) String#split [100 calls, 221 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (4.59%) Array#first [100 calls, 340 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (4.52%) Array#empty? [100 calls, 340 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.02% (3.91%) String#empty? [100 calls, 226 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.04% (0.71%) Module#name [100 calls, 221 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (0.59%) Kernel#class [100 calls, 1321 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.46% (0.47%) Class#new [100 calls, 567 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.34% (74.44%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=12">Hat::JsonSerializer#initialize</a> [100 calls, 221 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.16% (44.95%) Class#new [100 calls, 567 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.05% (32.07%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=6">Hat::RelationIncludes#initialize</a> [100 calls, 221 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.03% (17.49%) &lt;Class::BasicObject&gt;#allocate [100 calls, 443 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.04% (8.59%) &lt;Class::BasicObject&gt;#allocate [100 calls, 443 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.22% (0.22%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=46">Hat::JsonSerializer#includes</a> [100 calls, 221 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.12% (54.28%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=10">Hat::RelationIncludes#include</a> [100 calls, 221 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.04% (32.31%) Array#concat [100 calls, 221 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.05% (0.05%) Hash#merge! [100 calls, 100 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.14% (0.14%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=207">Hat::JsonSerializer#root_key_for_collection</a> [1 calls, 1 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.08% (55.08%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/string/inflections.rb&line=31">String#pluralize</a> [1 calls, 3 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.07% (94.05%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=32">ActiveSupport::Inflector#pluralize</a> [1 calls, 3 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.07% (91.77%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=331">ActiveSupport::Inflector#apply_inflections</a> [1 calls, 6 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.04% (66.21%) Array#each [1 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.02% (51.04%) String#sub! [37 calls, 191 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.01% (8.97%) Array#include? [1 calls, 206 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (23.08%) String#== [10 calls, 60 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (7.59%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (54.55%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (66.67%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (50.00%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [1 calls, 893 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (18.18%) Kernel#block_given? [1 calls, 1553 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (4.14%) String#[] [1 calls, 6 total]
+</li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (3.45%) Kernel#dup [1 calls, 547 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (60.00%) Kernel#initialize_dup [1 calls, 987 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (33.33%) String#initialize_copy [1 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (40.00%) &lt;Class::String&gt;#allocate [1 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (1.38%) String#empty? [1 calls, 226 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (1.38%) String#downcase [1 calls, 446 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (6.33%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (60.00%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (66.67%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (50.00%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [1 calls, 893 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (10.00%) Kernel#block_given? [1 calls, 1553 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.60%) Kernel#is_a? [1 calls, 5813 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.05% (33.44%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/string/inflections.rb&line=118">String#underscore</a> [1 calls, 1 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.04% (95.10%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=90">ActiveSupport::Inflector#underscore</a> [1 calls, 221 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (25.77%) String#gsub! [4 calls, 1104 total]
+</li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.01% (17.53%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (58.82%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (70.00%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (14.29%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [1 calls, 893 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (5.88%) Kernel#block_given? [1 calls, 1553 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (8.25%) Kernel#dup [1 calls, 547 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (50.00%) Kernel#initialize_dup [1 calls, 987 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (25.00%) String#initialize_copy [1 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (12.50%) &lt;Class::String&gt;#allocate [1 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (3.09%) Regexp#to_s [1 calls, 221 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (2.06%) String#downcase! [1 calls, 221 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (2.06%) String#tr! [1 calls, 441 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (1.03%) String#to_s [1 calls, 449 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (2.30%) String#gsub [1 calls, 661 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.98%) String#split [1 calls, 221 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.98%) String#to_sym [1 calls, 443 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.66%) Kernel#class [1 calls, 1321 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.33%) Module#name [1 calls, 221 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.33%) Array#last [1 calls, 1 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.13% (0.13%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=184">Hat::JsonSerializer#add_sideload_data_from_identity_map</a> [1 calls, 1 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.12% (97.15%) Hash#each [1 calls, 1 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.11% (87.55%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/string/inflections.rb&line=31">String#pluralize</a> [2 calls, 3 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.10% (95.82%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=32">ActiveSupport::Inflector#pluralize</a> [2 calls, 3 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.09% (89.52%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=331">ActiveSupport::Inflector#apply_inflections</a> [2 calls, 6 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.06% (62.44%) Array#each [2 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.03% (51.56%) String#sub! [53 calls, 191 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.01% (10.73%) Array#include? [2 calls, 206 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.01% (81.82%) String#== [20 calls, 60 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.01% (8.29%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [2 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (58.82%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [2 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (60.00%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [2 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (33.33%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [2 calls, 893 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (5.88%) Kernel#block_given? [2 calls, 1553 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (4.39%) Kernel#dup [2 calls, 547 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (33.33%) Kernel#initialize_dup [2 calls, 987 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (66.67%) String#initialize_copy [2 calls, 447 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (2.93%) String#[] [2 calls, 6 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (1.46%) String#downcase [2 calls, 446 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.98%) String#to_s [2 calls, 449 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.98%) String#empty? [2 calls, 226 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.01% (8.30%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [2 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (57.89%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [2 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (72.73%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [2 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (25.00%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [2 calls, 893 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (10.53%) Kernel#block_given? [2 calls, 1553 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (1.26%) Kernel#is_a? [2 calls, 5813 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.01% (5.13%) Hash#values [2 calls, 2 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.73%) Hash#[]= [2 calls, 967 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.37%) String#to_sym [2 calls, 443 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.37%) String#to_s [2 calls, 449 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.71%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/identity_map.rb&line=24">Hat::IdentityMap#to_hash</a> [1 calls, 1 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.08% (0.08%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=79">Hat::JsonSerializer#add_metadata</a> [1 calls, 1 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.08% (95.53%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=211">Hat::JsonSerializer#singularize</a> [1 calls, 401 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.07% (95.91%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/string/inflections.rb&line=54">String#singularize</a> [1 calls, 3 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.07% (98.78%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=49">ActiveSupport::Inflector#singularize</a> [1 calls, 3 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.07% (91.36%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/methods.rb&line=331">ActiveSupport::Inflector#apply_inflections</a> [1 calls, 6 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.05% (72.30%) Array#each [1 calls, 2187 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.03% (57.01%) String#sub! [43 calls, 191 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.01% (8.11%) Array#include? [1 calls, 206 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (8.33%) String#== [10 calls, 60 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (6.76%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (50.00%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (60.00%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (66.67%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [1 calls, 893 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (20.00%) Kernel#block_given? [1 calls, 1553 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (4.05%) Kernel#dup [1 calls, 547 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (50.00%) Kernel#initialize_dup [1 calls, 987 total]
+<ul style="display:none"></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (33.33%) &lt;Class::String&gt;#allocate [1 calls, 447 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (2.70%) String#[] [1 calls, 6 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (1.35%) String#empty? [1 calls, 226 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.68%) String#downcase [1 calls, 446 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.68%) String#to_s [1 calls, 449 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (6.17%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=203">ActiveSupport::Inflector#inflections</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (60.00%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/inflector/inflections.rb&line=30">&lt;Class::ActiveSupport::Inflector::Inflections&gt;#instance</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (83.33%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/cache.rb&line=34">ThreadSafe::Cache#[]</a> [1 calls, 893 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (20.00%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/thread_safe-0.1.3/lib/thread_safe/non_concurrent_cache_backend.rb&line=9">ThreadSafe::NonConcurrentCacheBackend#[]</a> [1 calls, 893 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (10.00%) Kernel#block_given? [1 calls, 1553 total]
+</li></ul></li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (1.17%) Hash#[]= [1 calls, 967 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (1.12%) Hash#[]= [1 calls, 967 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.56%) Symbol#to_s [1 calls, 1701 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.00%) Hash#[]= [1 calls, 967 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (0.00%) Kernel#kind_of? [1 calls, 2023 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.04% (0.04%) Class#new [1 calls, 567 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.03% (89.29%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=12">Hat::JsonSerializer#initialize</a> [1 calls, 221 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.03% (86.67%) Class#new [2 calls, 567 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.02% (73.85%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/identity_map.rb&line=6">Hat::IdentityMap#initialize</a> [1 calls, 1 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.02% (70.83%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/core_ext/hash/indifferent_access.rb&line=8">Hash#with_indifferent_access</a> [1 calls, 123 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.01% (85.29%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=74">&lt;Class::ActiveSupport::HashWithIndifferentAccess&gt;#new_from_hash_copying_default</a> [1 calls, 123 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.01% (65.52%) Class#new [1 calls, 567 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.01% (78.95%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=57">ActiveSupport::HashWithIndifferentAccess#initialize</a> [1 calls, 123 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (46.67%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/activesupport-4.0.0/lib/active_support/hash_with_indifferent_access.rb&line=124">ActiveSupport::HashWithIndifferentAccess#update</a> [1 calls, 123 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (28.57%) Kernel#is_a? [1 calls, 5813 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (14.29%) Hash#each_pair [1 calls, 123 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (13.33%) Kernel#is_a? [1 calls, 5813 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (6.67%) Hash#initialize [1 calls, 124 total]
+</li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (5.26%) &lt;Class::Hash&gt;#allocate [1 calls, 564 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (20.69%) Kernel#tap [1 calls, 123 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (16.67%) Hash#default [1 calls, 245 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (16.67%) Hash#default= [1 calls, 123 total]
+</li></ul></li></ul></li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (20.83%) Class#new [1 calls, 567 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (20.00%) &lt;Class::Hash&gt;#allocate [1 calls, 564 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (20.00%) Hash#initialize [1 calls, 124 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (6.15%) &lt;Class::BasicObject&gt;#allocate [2 calls, 443 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (6.15%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=6">Hat::RelationIncludes#initialize</a> [1 calls, 221 total]
+</li></ul></li></ul></li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (3.57%) &lt;Class::BasicObject&gt;#allocate [1 calls, 443 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.02% (0.02%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/spec/hat/json_serializer_performance_spec.rb&line=29">RSpec::Core::ExampleGroup::Nested_3#employers</a> [1 calls, 1 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (7.27%) <a href="txmt://open?url=file:///Users/robmonie/.rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/rspec-core-2.13.1/lib/rspec/core/memoized_helpers.rb&line=77">RSpec::Core::MemoizedHelpers#__memoized</a> [1 calls, 1 total]
+</li><li class="color01" style="display:none"><img src="empty.png"> 0.00% (5.45%) Hash#fetch [1 calls, 1 total]
+</li></ul></li><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (0.00%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/json_serializer.rb&line=46">Hat::JsonSerializer#includes</a> [1 calls, 221 total]
+<ul style="display:none"><li class="color01" style="display:none"><img class="toggle" src="empty.png"> 0.00% (77.78%) <a href="txmt://open?url=file:///Users/robmonie/dev/ruby/hat/lib/hat/relation_includes.rb&line=10">Hat::RelationIncludes#include</a> [1 calls, 221 total]
+<ul style="display:none"><li class="color01" style="display:none"><img src="empty.png"> 0.00% (28.57%) Array#concat [1 calls, 221 total]
+</li></ul></li></ul></li></ul></li></ul><div id="sentinel"></div></div></body></html>
