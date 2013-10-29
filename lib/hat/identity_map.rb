@@ -1,23 +1,24 @@
-require 'active_support/core_ext/hash/indifferent_access'
-
+#type/id map for mapping string or symbol keys and ids to objects.
+#Optimised for speed... (don't rewrite this to use hash with indifferent access as it is slower)
 module Hat
   class IdentityMap
 
     def initialize
-      @identity_map = Hash.new.with_indifferent_access
+      @identity_map = {}
     end
 
     def get(type, id)
-      if id_map = identity_map[type]
+      if id_map = identity_map[type.to_sym]
         id_map[id]
       end
     end
 
     def put(type, id, object)
-      unless identity_map[type]
-        identity_map[type] = {}
+      type_symbol = type.to_sym
+      unless identity_map[type_symbol]
+        identity_map[type_symbol] = {}
       end
-      identity_map[type][id] = object
+      identity_map[type_symbol][id] = object
       self
     end
 

@@ -4,7 +4,7 @@ class PersonSerializer
 
   include Hat::JsonSerializer
 
-  attributes :id, :first_name, :last_name, :full_name
+  attributes :id, :first_name, :last_name, :full_name, :dob, :email
   has_one :employer
   has_many :skills
 
@@ -28,7 +28,7 @@ class SkillSerializer
 
   include Hat::JsonSerializer
 
-  attributes :id, :name
+  attributes :id, :name, :description
   has_one :person
 
 end

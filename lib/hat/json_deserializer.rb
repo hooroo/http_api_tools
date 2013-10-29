@@ -40,17 +40,16 @@ module Hat
 
       return nil unless target_class
 
-      existing_deserialized = identity_map.get(target_class, json_item['id'])
+      existing_deserialized = identity_map.get(target_class.name, json_item['id'])
 
       return existing_deserialized if existing_deserialized
 
       relations = {}
-      # delete_keys = []
-      #we have to add this before we process subtree or we'll get circular issues
 
+      #we have to add this before we process subtree or we'll get circular issues
       target = target_class.new(json_item.with_indifferent_access)
 
-      identity_map.put(target_class, json_item['id'], target)
+      identity_map.put(target_class.name, json_item['id'], target)
 
       json_item.each do |key, value|
 
@@ -58,11 +57,8 @@ module Hat
 
         if key.end_with? '_id'
           relations[sideload_key] = create_belongs_to(sideload_key, value)
-          # delete_keys << key
-
         elsif key.end_with? '_ids'
           relations[sideload_key] = create_has_manys(sideload_key, value)
-          # delete_keys << key
         end
 
       end

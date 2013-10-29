@@ -43,6 +43,7 @@ class Skill
 
   attribute :id
   attribute :name
+  attribute :description
   attribute :person
 
   def person_id

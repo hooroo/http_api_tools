@@ -10,9 +10,9 @@ module Hat
       employers = (1..100).map do |employer_id|
         employer = Employer.new(id: employer_id, name: "Employer #{rand(employer_id)}")
         people = (1..100).map do |person_id|
-          person = Person.new(id: person_id, first_name: "First #{rand(person_id)}", last_name: "Last #{rand(person_id)}", employer: employer)
+          person = Person.new(id: person_id, first_name: "First #{rand(person_id)}", last_name: "Last #{rand(person_id)}", dob: Date.today, email: 'user@example.com', employer: employer)
           skills = (1..20).map do |skill_id|
-            skill = Skill.new(id: skill_id, name: "Skill #{rand(skill_id)}", person: person)
+            skill = Skill.new(id: skill_id, name: "Skill #{rand(skill_id)}", description: "abc123" * 500, person: person)
           end
           person.skills = skills
           person

@@ -14,7 +14,7 @@ module Hat
       @result = options[:result] || {}
       @relation_includes = options[:relation_includes] || RelationIncludes.new([])
       @identity_map = options[:identity_map] || IdentityMap.new
-      @singulars = options[:singulars] || {}
+      @singular_map = options[:singular_map] || {}
     end
 
     def to_json(*args)
@@ -29,7 +29,11 @@ module Hat
           serializer_class = serializer_class_for(serializable_item)
           hashed = { id: serializable_item.id }
           result[root_key] << hashed
-          hashed.merge! serializer_class.new(serializable_item, result: result, identity_map: identity_map, singulars: singulars).includes(*relation_includes.includes).to_hash
+          hashed.merge! serializer_class.new(serializable_item, {
+            result: result,
+            identity_map: identity_map,
+            singular_map: singular_map
+          }).includes(*relation_includes.includes).to_hash
         end
       else
         serialized_hash = to_hash
@@ -74,7 +78,7 @@ module Hat
     private
 
     attr_writer :relation_includes
-    attr_accessor :singulars
+    attr_accessor :singular_map, :serializer_map
 
     def add_metadata(root_key)
       result[:meta] = {
@@ -175,9 +179,12 @@ module Hat
     def sideload_item(related, attr_name, type_key)
       serializer_class = serializer_class_for(related)
       includes = relation_includes.nested_includes_for(attr_name) || []
-      # placeholder = { id: related.id }
-      # identity_map.put(type_key, related.id, placeholder) #prevent circular serialization
-      hashed = serializer_class.new(related, result: result, identity_map: identity_map, singulars: singulars).includes(*includes).to_hash
+      hashed = serializer_class.new(related, {
+        result: result,
+        identity_map: identity_map,
+        singular_map: singular_map
+      }).includes(*includes).to_hash
+
       identity_map.put(type_key, related.id, hashed)
     end
 
@@ -196,7 +203,7 @@ module Hat
     end
 
     def serializer_class_for(model)
-      "#{model.class.name.titleize}Serializer".constantize
+      "#{model.class.name}Serializer".constantize
     end
 
     def is_active_record_relation?(relation)
@@ -208,11 +215,12 @@ module Hat
       self.class.name.split("::").last.underscore.gsub('_serializer', '').pluralize.to_sym
     end
 
+    #We call this a lot so cache the results  for performance
     def singularize(string)
-      singular = singulars[string]
+      singular = singular_map[string]
       unless singular
         singular = string.singularize
-        singulars[string] = singular
+        singular_map[string] = singular
       end
       singular
     end
