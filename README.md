@@ -26,12 +26,16 @@ Or install it yourself as:
 ## Usage
 At a high level this gem provides serialization of models (active model or otherwise), deserialization of the serialized json and a way to declaritively create basic models in clients with basic type coercion.
 
-It has been written to work as a whole where the producer and client of the api are both maintained by the same development team. Conventions are used throughout to keep things simple. At this stage, breaking these conventions isn't supported in many cases but the gem can be extended towards this goal as the needs arise. Please see the note on performance in the section on contributing.
+It has been written to work as a whole where the producer and client of the api are both maintained by the same development team. Conventions are used throughout to keep things simple. At this stage, breaking these conventions isn't supported in many cases but the gem can be extended towards this goal as the needs arise. Please see the note on performance in the section on contributing at the end of this document.
 
 ### Serialization
 Serialization is carried out through serializers. There is a one-to-one mapping between a model class and it's corresponding serializer class.
 
 Eg: For a model called `User`, a serializer called `UserSerializer` would automatically be used to serialize instances.
+
+To use a serializer in a controller you should instantiate an instance of the serializer for the top level type you're serializing and pass it to render:
+
+`render json: UserSerializer.new(user)`
 
 #### Serializer Definition
 
@@ -86,7 +90,7 @@ name with a `_id` or `_ids` suffix.
 One advantage to this approach is that it's always clear what relationships exist for a resource. Embedding relationships inside another resource can make it hard to know whether a relationship exists, especially if different requests return the same resource in different ways.
 
 ##### Sideloading related resources
-Often it will be desirable to sideload the related data to save on requests. This can be done when creating the top level serializer using the same approach active record uses for including relationships in queries.
+Often it will be desirable to sideload the related data to save on requests. This can be done when creating the top level serializer using the same approach ActiveRecord uses for including relationships in queries.
 
 `UserSerializer.new(user).includes(:profile, { posts: [:comments] })`
 
@@ -216,7 +220,7 @@ end
 
 This will define a User class with attr_accessors for all attributes defined. The initialize method will accept a hash of values which will be passed through type coercions when configured and have defaults applied when no value is passed in for a key.
 
-At this stage type_coercion is limited and there's no way to define types outside the gem. This will change when the need arises or we get around to it. For now if a type coercion makes sense to add for all apps, it should be added to `type_coercions.rb`.
+At this stage type coercion is limited and there's no way to define types outside the gem. This will change when the need arises or we get around to it. For now if a type coercion makes sense to add for all apps, it should be added to `type_coercions.rb`.
 
 
 ### Polymorphism
