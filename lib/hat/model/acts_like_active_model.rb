@@ -3,7 +3,7 @@ module Hat
     module ActsLikeActiveModel
 
       def to_param
-        if self.respond_to(:id)
+        if self.respond_to?(:id)
           self.id
         end
       end
