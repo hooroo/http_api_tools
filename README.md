@@ -237,7 +237,7 @@ these applications and have specs written to validate behaviour.
 Performance is critial for this gem so any changes must be made with this in mind. There is a basic performance
 spec for serialization that dumps some timings and creates a profile report in `reports/profile_report.html`.
 
-Until we have a more robust way of tracking performance over time, please do some before and after tests against this when you make changes. Even small things have been found to introduce big performance issues. For example, we do lots of string singularization so we have cached these. We also started using `hash_with_indifferent_access` in the `IdentityMap` and found by removing it we gained significant savings.
+Until we have a more robust way of tracking performance over time, please do some before and after tests against this when you make changes. Even small things have been found to introduce big performance issues.
 
 
 ## To Do
