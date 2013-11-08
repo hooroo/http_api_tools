@@ -36,19 +36,15 @@ module Hat
     end
 
     def build_from_json(json)
-      json.each do |type_key, sideloaded_json_item|
 
-        if sideloaded_json_item.kind_of?(Array)
-          sideloaded_json_item.each do |json_item|
-            put(type_key, json_item['id'], json_item)
-          end
-        elsif type_key == root_key
-          unless get(type_key, sideloaded_json_item['id'])
-            put(type_key, sideloaded_json_item['id'], sideloaded_json_item)
-          end
-        end
-
+      json[root_key].each do |json_item|
+        put(root_key, json_item['id'], json_item)
       end
+
+      json['linked'].each do |type_key, sideloaded_json_item|
+        sideloaded_json_item.each { |json_item| put(type_key, json_item['id'], json_item) }
+      end
+
     end
 
   end

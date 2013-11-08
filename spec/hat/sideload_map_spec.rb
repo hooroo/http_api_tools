@@ -8,24 +8,26 @@ module Hat
     let(:json) do
       {
         'meta' => {
-
+          'root_key' => 'posts'
         },
-        'post' => {
+        'posts' => [{
           'id' => 1,
           'title' => 'Post Title'
-        },
-        'images' => [
-          {'id' => 10, 'url' => '1.png' },
-          {'id' => 11, 'url' => '2.png' }
-        ],
-        'comments' => [
-          {'id' => 20, 'text' => 'Comment 1'}
-        ]
+        }],
+        'linked' => {
+          'images' => [
+            {'id' => 10, 'url' => '1.png' },
+            {'id' => 11, 'url' => '2.png' }
+          ],
+          'comments' => [
+            {'id' => 20, 'text' => 'Comment 1'}
+          ]
+        }
       }
 
     end
 
-    let(:sideload_map) { SideloadMap.new(json, 'post') }
+    let(:sideload_map) { SideloadMap.new(json, 'posts') }
 
     describe 'getting sideloaded json from the map' do
 
@@ -33,15 +35,15 @@ module Hat
         expect(sideload_map.get('post', 1)['id']).to eql 1
       end
 
-      it 'returns correctly by singular type' do
+      it 'retrieves by singular type' do
         expect(sideload_map.get('image', 10)['id']).to eql 10
       end
 
-      it 'returns correctly by plural type' do
+      it 'retrieves by plural type' do
         expect(sideload_map.get('images', 11)['id']).to eql 11
       end
 
-      it 'returns correctly with string type' do
+      it 'retrieves with string type' do
         expect(sideload_map.get('comment', 20)['id']).to eql 20
       end
 

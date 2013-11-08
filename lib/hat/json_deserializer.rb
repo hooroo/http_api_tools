@@ -19,17 +19,7 @@ module Hat
     end
 
     def deserialize
-
-      if root_object = json[root_key]
-        if root_object.kind_of? Array
-          result = root_object.map {|json_item| create_from_json_item(target_class_for_key(root_key), json_item) }
-        else
-          result = create_from_json_item(target_class_for_key(root_key), root_object)
-        end
-      end
-
-      result
-
+      json[root_key].map {|json_item| create_from_json_item(target_class_for_key(root_key), json_item) }
     end
 
     private
@@ -51,20 +41,19 @@ module Hat
 
       identity_map.put(target_class.name, json_item['id'], target)
 
-      json_item.each do |key, value|
+      links = json_item['links'] || {}
 
-        sideload_key = sideload_key_for(key)
+      links.each do |relation_name, value|
 
-        if key.end_with? '_id'
-          relations[sideload_key] = create_belongs_to(sideload_key, value)
-        elsif key.end_with? '_ids'
-          relations[sideload_key] = create_has_manys(sideload_key, value)
+        if value.kind_of? Array
+          related = create_has_manys(relation_name, value)
+        else
+          related = create_belongs_to(relation_name, value)
         end
 
-      end
+        target.send("#{relation_name}=", related)
 
-      # delete_keys.each { |key| json_item.delete(key) }
-      relations.each {|key, related| target.send("#{key}=", related) unless related == nil }
+      end
 
       target
 
