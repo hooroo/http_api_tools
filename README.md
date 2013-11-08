@@ -1,12 +1,17 @@
 # Hooroo API Tools
-Named in a rush - if you have a good one, lets change it.
+Terribly named, in a rush - if you have a good one, lets change it.
 
 Provides fast serialization/deserialization of models with simple model attribute definition in client apps.
 
+Based on the ID Based Json API Spec - http://jsonapi.org/format/#id-based-json-api
+
 ###Why?
 We tried using active model serializer and virtus for serialization and model attribute definition/coercion
-and found that they both performed quite badly. At this stage, this gem provides the stuff we need for a fraction
-of the performance footprint.
+and found that they both performed inadequately for our needs. At this stage, this gem provides the stuff we
+need for a fraction of the performance footprint.
+
+We later discovered Restpack Serializer (https://github.com/RestPack/restpack_serializer) which provides most of what
+our serializer does with some differences in it's usage. We haven't done any performance comparisons at this stage.
 
 
 ## Installation
@@ -29,9 +34,11 @@ At a high level this gem provides serialization of models (active model or other
 It has been written to work as a whole where the producer and client of the api are both maintained by the same development team. Conventions are used throughout to keep things simple. At this stage, breaking these conventions isn't supported in many cases but the gem can be extended towards this goal as the needs arise. Please see the note on performance in the section on contributing at the end of this document.
 
 ### Serialization
-Serialization is carried out through serializers. There is a one-to-one mapping between a model class and it's corresponding serializer class.
+There is an intentional one-to-one mapping between a model class and it's corresponding serializer class.
 
 Eg: For a model called `User`, a serializer called `UserSerializer` would automatically be used to serialize instances.
+
+The intention is that a resource should always be represented in the same way as returning different representations for different scenarios only causes confusion. If the same data needs to be represented using various resources, that's ok, they should however be different resources with different names and different urls.
 
 To use a serializer in a controller you should instantiate an instance of the serializer for the top level type you're serializing and pass it to render:
 
@@ -72,22 +79,26 @@ end
 #### JSON Structure
 
 Serialization is structured using a 'sideloading' approach for relationships between the serialized data.
-By default, only the ids of related objects will be serialized.  Ids are serialized against keys representing the relationship
-name with a `_id` or `_ids` suffix.
+By default, only the ids of related objects will be serialized. These relationships and their ids will be
+added to the `links` hash.
 
 ```javascript
 {
- "user": {
+ "users": [{
     "id": 1,
     "first_name": "John",
     "last_name": "Smith",
-    "profile_id": 2,
-    "post_ids": [3, 4]
- }
+    "links" {
+      "profile": 2,
+      "posts": [3, 4]
+    }
+ }]
 }
 ```
 
-One advantage to this approach is that it's always clear what relationships exist for a resource. Embedding relationships inside another resource can make it hard to know whether a relationship exists, especially if different requests return the same resource in different ways.
+One advantage to this approach is that it's always clear what relationships exist for a resource, even if you don't
+include the resources themselves in the response. Embedding relationships inside another resource can make it hard
+to know whether a relationship exists, especially if different requests return the same resource in different ways.
 
 ##### Sideloading related resources
 Often it will be desirable to sideload the related data to save on requests. This can be done when creating the top level serializer using the same approach ActiveRecord uses for including relationships in queries.
@@ -98,70 +109,58 @@ Which produces the following json:
 
 ```javascript
 {
- "user": {
+ "users": [{
     "id": 1,
     "first_name": "John",
     "last_name": "Smith",
-    "profile_id": 2,
-    "post_ids": [3, 4]
- },
- "profiles": [
-  {
-    "id": 2,
-    //...
-  }
- ],
+    "links": {
+      "profile": 2,
+      "posts": [3, 4]
+    }
+ }],
+ "linked": {
+   "profiles": [
+    {
+      "id": 2,
+      //...
+    }
+   ],
 
- posts: [
-  {
-    "id": 3,
-    "user_id": 1,
-    "comment_ids": [5]
+   posts: [
+    {
+      "id": 3,
+      "links": {
+        "user": 1,
+        "comments": [5]
+      }
+      //...
+    },
+    {
+      "id": 4,
+      "links": {
+        "user": 1,
+        "comments": []
+      }
+      //...
+    }
+   ],
+   "comments": [
+    "id": 5,
+    "links": {
+        "post": 3
+    }
     //...
-  },
-  {
-    "id": 4,
-    "user_id": 1,
-    "comment_ids": []
-    //...
+   ]
   }
- ],
- "comments": [
-  "id": 5,
-  "post_id": 3,
-  //...
- ]
 
 }
 ```
 
 Another benefit to sideloading over nesting resources is that if the same resource is referenced multiple times, it only needs to be serialized once.
 
-Note how the root node has a singular key and the related (sideloaded) resources are keyed under their pluralized name.
-
-
-
 #### Meta data
-Every request will also contain a special meta attribute which could be augmented with various extra meta-data. At this point, it will always return the `type` and `root_key` for the current request.  Eg:
-
-```javascript
-{
-  "meta": {
-    "type": "user",
-    "root_key": "user"
-  },
-  "user": {
-    "id": 1,
-    "first_name": "John",
-    "last_name": "Smith",
-    "profile_id": 2,
-    "post_ids": [3, 4]
-  }
-  //Sideloaded data goes here
-}
-```
-
-If we are returning a collection of items rather than a singular, we'd see the following:
+Every request will also contain a special meta attribute which could be augmented with various additional pieces
+of meta-data. At this point, it will always return the `type` and `root_key` for the current request.  Eg:
 
 ```javascript
 {
@@ -180,9 +179,11 @@ If we are returning a collection of items rather than a singular, we'd see the f
 }
 ```
 
+Notice that the root is an array and the root_key a plural. This is the case regardless of whether a single resource
+is being represented or a collection of resources. This is in line with the json-api spec and generally simplifies both serialization and deserialization.
 
 ### Deserialization
-A deserializer exists that expects json in the format the that the serializer has created making it easy to create matching rest apis and clients with little work needing to be done at each end.
+The `Hat::JsonDeserializer` expects json in the format that the serializer has created making it easy to create matching rest apis and clients with little work needing to be done at each end.
 
 `Hat::JsonDeserializer.new(json).deserialize`
 
