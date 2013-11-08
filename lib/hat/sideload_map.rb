@@ -41,8 +41,10 @@ module Hat
         put(root_key, json_item['id'], json_item)
       end
 
-      json['linked'].each do |type_key, sideloaded_json_item|
-        sideloaded_json_item.each { |json_item| put(type_key, json_item['id'], json_item) }
+      if json['linked']
+        json['linked'].each do |type_key, sideloaded_json_item|
+          sideloaded_json_item.each { |json_item| put(type_key, json_item['id'], json_item) }
+        end
       end
 
     end

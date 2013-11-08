@@ -76,13 +76,13 @@ module Hat
       end
     end
 
-    def sideload_key_for(attr_name)
-      if attr_name.end_with? '_ids'
-        attr_name.gsub('_ids', '').pluralize
-      elsif attr_name.end_with? '_id'
-        attr_name.gsub('_id', '')
-      end
-    end
+    # def sideload_key_for(attr_name)
+    #   if attr_name.end_with? '_ids'
+    #     attr_name.gsub('_ids', '').pluralize
+    #   elsif attr_name.end_with? '_id'
+    #     attr_name.gsub('_id', '')
+    #   end
+    # end
 
     def target_class_for_key(key)
       key.to_s.singularize.camelize.constantize
