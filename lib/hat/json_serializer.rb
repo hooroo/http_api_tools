@@ -26,7 +26,8 @@ module Hat
 
       Array(serializable).each do |serializable_item|
         serializer_class = serializer_class_for(serializable_item)
-        hashed = { id: serializable_item.id }
+        id = serializable_item.id if serializable_item.respond_to? :id
+        hashed = { id: id }
         result[root_key] << hashed
         hashed.merge! serializer_class.new(serializable_item, { result: result, identity_map: identity_map }).includes(*relation_includes.includes).to_hash
       end
