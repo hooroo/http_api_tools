@@ -23,26 +23,28 @@ module Hat
       context "without any includes" do
 
         let(:serialized) { PersonSerializer.new(person).as_json.with_indifferent_access }
+        let(:serialized_person) { serialized[:people].first }
 
         it "serializes basic attributes" do
-          expect(serialized[:person][:id]).to eql person.id
-          expect(serialized[:person][:first_name]).to eql person.first_name
-          expect(serialized[:person][:last_name]).to eql person.last_name
-          expect(serialized[:person][:id]).to eql person.id
+
+          expect(serialized_person[:id]).to eql person.id
+          expect(serialized_person[:first_name]).to eql person.first_name
+          expect(serialized_person[:last_name]).to eql person.last_name
+          expect(serialized_person[:id]).to eql person.id
         end
 
         it "serializes attributes defined as methods on the serializer" do
-          expect(serialized[:person][:full_name]).to eql "#{person.first_name} #{person.last_name}"
+          expect(serialized_person[:full_name]).to eql "#{person.first_name} #{person.last_name}"
         end
 
         it "serializes relationships as ids" do
-          expect(serialized[:person][:employer_id]).to eql person.employer.id
-          expect(serialized[:person][:skill_ids]).to eql person.skills.map(&:id)
+          expect(serialized_person[:links][:employer]).to eql person.employer.id
+          expect(serialized_person[:links][:skills]).to eql person.skills.map(&:id)
         end
 
         it "doesn't serialize any relationships" do
-          expect(serialized[:employers]).to be_nil
-          expect(serialized[:skills]).to be_nil
+          expect(serialized[:linked][:employers]).to be_nil
+          expect(serialized[:linked][:skills]).to be_nil
         end
 
       end
@@ -53,17 +55,19 @@ module Hat
           PersonSerializer.new(person).includes(:employer, {skills: [:person]}).as_json.with_indifferent_access
         end
 
+        let(:serialized_person) { serialized[:people].first }
+
         it "serializes relationships as ids" do
-          expect(serialized[:person][:employer_id]).to eql person.employer.id
-          expect(serialized[:person][:skill_ids]).to eql person.skills.map(&:id)
+          expect(serialized_person[:links][:employer]).to eql person.employer.id
+          expect(serialized_person[:links][:skills]).to eql person.skills.map(&:id)
         end
 
         it "sideloads has_one relationships" do
-          expect(serialized[:employers].first[:name]).to eql person.employer.name
+          expect(serialized[:linked][:employers].first[:name]).to eql person.employer.name
         end
 
         it "sideloads has_many relationships" do
-          expect(serialized[:skills].first[:name]).to eql person.skills.first.name
+          expect(serialized[:linked][:skills].first[:name]).to eql person.skills.first.name
         end
 
       end
@@ -71,7 +75,7 @@ module Hat
 
     end
 
-    context "with an active record relation as the serializable object" do
+    context "with an array as the serializable object" do
 
       let(:relation) do
         relation = [person, second_person]
