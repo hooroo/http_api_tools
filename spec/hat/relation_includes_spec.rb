@@ -18,6 +18,12 @@ module Hat
       it "does not include unspecified relations" do
         expect(relation_includes.include?(:x)).to be_false
       end
+
+      it "can be splat as args" do
+        collaborator = double('collaborator', splatter: nil)
+        collaborator.should_receive(:splatter).with(:a, {b: [:c]})
+        collaborator.splatter(*relation_includes)
+      end
     end
 
     describe "#include" do
@@ -39,5 +45,27 @@ module Hat
         expect(relation_includes.nested_includes_for(:b)).to eq([:c])
       end
     end
+
+    describe 'from params' do
+      let(:params) { {include: 'a,a.b,a.b.c,b,c'} }
+
+      let(:includes) { RelationIncludes.from_params(params) }
+
+      it 'creates single level includes' do
+        expect(includes).to include :b
+        expect(includes).to include :c
+      end
+
+      it 'creates nested includes' do
+        expect(includes.find(:a)).to eq({a: [{b: [:c]}]})
+      end
+
+      it 'creates same structure when implicit parts of the path are removed' do
+        simplified_params =  { include: 'a.b.c,b,c' }
+        simplified_includes =  RelationIncludes.from_params(simplified_params)
+        expect(includes.includes).to eql simplified_includes.includes
+      end
+    end
+
   end
 end
