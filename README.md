@@ -182,6 +182,11 @@ of meta-data. At this point, it will always return the `type` and `root_key` for
 Notice that the root is an array and the root_key a plural. This is the case regardless of whether a single resource
 is being represented or a collection of resources. This is in line with the json-api spec and generally simplifies both serialization and deserialization.
 
+##### Adding Metadata
+It might be desirable to add extra metadata to the serialized response. For example, adding information such as limit, offset, what includes are valid etc can be helpful to a client.
+
+`UserSerializer.new(user).meta(limit: 10, offset: 0)`
+
 ### Deserialization
 The `Hat::JsonDeserializer` expects json in the format that the serializer has created making it easy to create matching rest apis and clients with little work needing to be done at each end.
 
