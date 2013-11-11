@@ -46,26 +46,5 @@ module Hat
       end
     end
 
-    describe 'from params' do
-      let(:params) { {include: 'a,a.b,a.b.c,b,c'} }
-
-      let(:includes) { RelationIncludes.from_params(params) }
-
-      it 'creates single level includes' do
-        expect(includes).to include :b
-        expect(includes).to include :c
-      end
-
-      it 'creates nested includes' do
-        expect(includes.find(:a)).to eq({a: [{b: [:c]}]})
-      end
-
-      it 'creates same structure when implicit parts of the path are removed' do
-        simplified_params =  { include: 'a.b.c,b,c' }
-        simplified_includes =  RelationIncludes.from_params(simplified_params)
-        expect(includes.includes).to eql simplified_includes.includes
-      end
-    end
-
   end
 end
