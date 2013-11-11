@@ -14,6 +14,7 @@ module Hat
       @result = options[:result] || {}
       @relation_includes = options[:relation_includes] || RelationIncludes.new([])
       @identity_map = options[:identity_map] || IdentityMap.new
+      @meta_data = { type: root_key.to_s.singularize, root_key: root_key.to_s }
     end
 
     def to_json(*args)
@@ -33,13 +34,18 @@ module Hat
       end
 
       add_sideload_data_from_identity_map
-      add_metadata
+      add_meta
 
       result
     end
 
     def includes(*includes)
       self.relation_includes.include(includes)
+      self
+    end
+
+    def meta(data)
+      meta_data.merge!(data)
       self
     end
 
@@ -69,13 +75,10 @@ module Hat
     private
 
     attr_writer :relation_includes
-    attr_accessor :serializer_map
+    attr_accessor :serializer_map, :meta_data
 
-    def add_metadata
-      result[:meta] = {
-        type: root_key.to_s.singularize,
-        root_key: root_key
-      }
+    def add_meta
+      result[:meta] = meta_data
     end
 
     def attribute_hash
