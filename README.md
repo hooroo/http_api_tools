@@ -3,15 +3,7 @@ Terribly named, in a rush - if you have a good one, lets change it.
 
 Provides fast serialization/deserialization of models with simple model attribute definition in client apps.
 
-Based on the ID Based Json API Spec - http://jsonapi.org/format/#id-based-json-api
-
-###Why?
-We tried using active model serializer and virtus for serialization and model attribute definition/coercion
-and found that they both performed inadequately for our needs. At this stage, this gem provides the stuff we
-need for a fraction of the performance footprint.
-
-We later discovered Restpack Serializer (https://github.com/RestPack/restpack_serializer) which provides most of what
-our serializer does with some differences in it's usage. We haven't done any performance comparisons at this stage.
+Adheres to the ID Based Json API Spec - http://jsonapi.org/format/#id-based-json-api for serialization
 
 
 ## Installation
@@ -235,9 +227,6 @@ At this point, polymorphic relationships are not catered for but they can be whe
 
 ## Contributing
 
-This gem is currently being used exclusively by Places Api and Places Web. Any changes should be validated against
-these applications and have specs written to validate behaviour.
-
 ### A note on performance
 Performance is critial for this gem so any changes must be made with this in mind. There is a basic performance
 spec for serialization that dumps some timings and creates a profile report in `reports/profile_report.html`.
@@ -248,5 +237,6 @@ Until we have a more robust way of tracking performance over time, please do som
 ## To Do
 * Support serialization/deserialization of relationships with a key that differs from the type
 * Support polymorhic relationships
+* Support the Json Api UPDATES spec
 
 
