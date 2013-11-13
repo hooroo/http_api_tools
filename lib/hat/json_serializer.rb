@@ -127,7 +127,15 @@ module Hat
 
       has_manys.each do |attr_name|
         has_many_relation = serializable.send(attr_name) || []
-        has_many_hash[attr_name] = has_many_relation.map(&:id)
+
+        if has_many_relation.respond_to?(:pluck)
+          ids = has_many_relation.pluck(:id)
+        else
+          ids = has_many_relation.map(&:id)
+        end
+
+        has_many_hash[attr_name] = ids
+
       end
 
       has_many_hash
