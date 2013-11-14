@@ -15,6 +15,10 @@ module Hat
       super(@includes)
     end
 
+    def self.from_params(params)
+      from_string(params[:include])
+    end
+
     def self.from_string(string)
       return new if string.blank?
 
