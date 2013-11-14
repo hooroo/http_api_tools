@@ -150,6 +150,55 @@ Which produces the following json:
 
 Another benefit to sideloading over nesting resources is that if the same resource is referenced multiple times, it only needs to be serialized once.
 
+##### Url based sideloading
+It's possible to determine what resources to sideload by providing a query string parameter:
+
+`http://example.com/users/1?include?comments,posts.comments`
+
+This can be parsed using:
+
+`relation_includes = Hat::RelationIncludes.from_params(params)`
+
+and splat into the serializer includes:
+
+`UserSerializer.new(user).includes(*relation_includes)`
+
+and/or active record queries:
+
+`User.find(params[:id]).includes(*relation_includes)`
+
+
+##### Restricting what is included
+Once you open up what is sideload as a query string parameter you risk DOS attacks or poorly considered api calls that fetch too much. This can be countered by defining what is `includable` for each serializer what it's being used as the root serializer for a json response.
+
+```ruby
+class UserSerializer
+
+  include Hat::JsonSerializer
+
+  attributes :id, :first_name, :last_name, :full_name
+
+  has_many :posts
+  has_many :comments
+
+  includable(:profile, {:posts, [:comments]})
+
+end
+```
+
+This will ensure that regardless of what is declared in the `include` param, no more than the allowable includes are ever returned.
+
+To help in documenting what is includable, both the includable and included relations are returned in the meta data of the response.
+
+```javascript
+"meta": {
+  "type": "user",
+  "root_key": "users",
+  "includable": "profile,posts,posts.comments"
+  "included": "posts"
+}
+```
+
 #### Meta data
 Every request will also contain a special meta attribute which could be augmented with various additional pieces
 of meta-data. At this point, it will always return the `type` and `root_key` for the current request.  Eg:
