@@ -73,18 +73,12 @@ module Hat
 
         end
 
-
       end
 
       context "with an array as the serializable object" do
 
         let(:relation) do
-          relation = [person, second_person]
-          # active record relation responds to klass. There is def a better way to determine this
-          def relation.klass
-            Person
-          end
-          relation
+          [person, second_person]
         end
 
         let(:second_person) { Person.new(id: 5, first_name: 'Stu', last_name: 'Liston') }
@@ -129,6 +123,41 @@ module Hat
           serializer.meta(offset: 0, limit: 10)
           expect(serializer.as_json[:meta][:offset]).to eql 0
           expect(serializer.as_json[:meta][:limit]).to eql 10
+        end
+
+      end
+
+      describe "limiting sideloadable data" do
+
+        class LimitedSideloadingPersonSerializer < PersonSerializer
+          includable :employer, :skills
+        end
+
+        let(:unlimited_serialized) { PersonSerializer.new(person).includes(:employer, {skills: [:person]}).as_json.with_indifferent_access }
+
+        let(:limited_serialized) do
+          LimitedSideloadingPersonSerializer.new(person).includes(:employer, {skills: [:person]}).as_json.with_indifferent_access
+        end
+
+        it "does not limit sideloading if not limited in serializer" do
+          expect(unlimited_serialized[:linked][:people].first[:id]).to eq person.id
+        end
+
+        it "allows sideloading of includable relations" do
+          expect(limited_serialized[:linked][:skills].first[:name]).to eql person.skills.first.name
+        end
+
+        it "prevents sideloading of non-includable relations" do
+          expect(limited_serialized[:linked][:people]).to be_nil
+        end
+
+        it "includes what is includables in meta" do
+          expect(limited_serialized[:meta][:includable]).to eq 'employer,skills'
+        end
+
+        it "includes what was included in meta" do
+          expect(limited_serialized[:meta][:included]).to eq 'employer,skills'
+          expect(unlimited_serialized[:meta][:included]).to eq 'employer,skills,skills.person'
         end
 
       end

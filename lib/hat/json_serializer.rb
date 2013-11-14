@@ -12,7 +12,7 @@ module Hat
     def initialize(serializable, options = {})
       @serializable = serializable
       @result = options[:result] || {}
-      @relation_includes = options[:relation_includes] || RelationIncludes.new([])
+      @relation_includes = options[:relation_includes] || RelationIncludes.new()
       @identity_map = options[:identity_map] || IdentityMap.new
       @meta_data = { type: root_key.to_s.singularize, root_key: root_key.to_s }
     end
@@ -30,17 +30,23 @@ module Hat
         id = serializable_item.id if serializable_item.respond_to? :id
         hashed = { id: id }
         result[root_key] << hashed
-        hashed.merge! serializer_class.new(serializable_item, { result: result, identity_map: identity_map }).includes(*relation_includes.includes).to_hash
+        hashed.merge! serializer_class.new(serializable_item, { result: result, identity_map: identity_map }).includes(*relation_includes.to_a).to_hash
       end
 
       add_sideload_data_from_identity_map
-      add_meta
+
+      result[:meta] = meta_data.merge(includes_meta_data)
 
       result
     end
 
     def includes(*includes)
-      self.relation_includes.include(includes)
+      if includable
+        allowable_includes_to_add = RelationIncludes.new(*includes) & includable
+      else
+        allowable_includes_to_add = includes
+      end
+      relation_includes.include(allowable_includes_to_add)
       self
     end
 
@@ -65,6 +71,10 @@ module Hat
       self.class._relationships[:has_manys]
     end
 
+    def includable
+      self.class._includable
+    end
+
     def to_hash
       hash = attribute_hash.merge({links: has_one_hash.merge(has_many_hash)})
       sideload_has_ones
@@ -77,8 +87,8 @@ module Hat
     attr_writer :relation_includes
     attr_accessor :serializer_map, :meta_data
 
-    def add_meta
-      result[:meta] = meta_data
+    def includes_meta_data
+      { includable: includable.to_s, included: relation_includes.to_s }
     end
 
     def attribute_hash
@@ -148,7 +158,7 @@ module Hat
 
         id_attr = "#{attr_name}_id".to_sym
 
-        if relation_includes.include?(attr_name)
+        if relation_includes.includes_relation?(attr_name)
           if related = serializable.send(attr_name)
 
             type_key = attr_name.to_s.pluralize.to_sym
@@ -166,7 +176,7 @@ module Hat
 
       has_manys.each do |attr_name|
 
-        if relation_includes.include?(attr_name)
+        if relation_includes.includes_relation?(attr_name)
 
           has_many_relation = serializable.send("#{attr_name}") || []
           type_key = attr_name
@@ -212,6 +222,7 @@ module Hat
 
       base.class_attribute :_attributes
       base.class_attribute :_relationships
+      base.class_attribute :_includable
 
       base._attributes = []
       base._relationships = { has_ones: [], has_manys: [] }
@@ -232,6 +243,11 @@ module Hat
       def has_many(has_many)
         self._relationships[:has_manys] << has_many
       end
+
+      def includable(*includes)
+        self._includable = RelationIncludes.new(*includes)
+      end
+
     end
 
   end
