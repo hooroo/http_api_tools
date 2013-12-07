@@ -23,16 +23,19 @@ class Person
 
 end
 
-class Employer
+class Company
 
   include Hat::Model::Attributes
 
   attribute :id
   attribute :name
-  attribute :people
+  attribute :employees
+  attribute :suppliers
+  attribute :parent_company
+  attribute :address
 
-  def person_ids
-    people.map(&:id)
+  def employee_ids
+    employees.map(&:id)
   end
 
 end
@@ -48,6 +51,17 @@ class Skill
 
   def person_id
     person.try(:id)
+  end
+
+end
+
+class Address
+
+  attr_accessor :id, :street_address
+
+  def initialize(attrs)
+    @id = attrs[:id]
+    @street_address = attrs[:street_address]
   end
 
 end

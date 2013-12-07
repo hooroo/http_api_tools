@@ -14,12 +14,12 @@ class PersonSerializer
 
 end
 
-class EmployerSerializer
+class CompanySerializer
 
   include Hat::JsonSerializer
 
   attributes :id, :name
-  has_many :people
+  has_many :employees
 
 end
 

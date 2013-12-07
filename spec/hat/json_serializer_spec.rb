@@ -5,21 +5,21 @@ module Hat
 
   describe JsonSerializer do
 
-    let(:employer) { Employer.new(id: 1, name: 'Hooroo') }
+    let(:company) { Company.new(id: 1, name: 'Hooroo') }
     let(:person) { Person.new(id: 2, first_name: 'Rob', last_name: 'Monie') }
     let(:skill) { Skill.new(id: 3, name: "JSON Serialization") }
     let(:skill2) { Skill.new(id: 4, name: "JSON Serialization 2") }
 
     before do
-      employer.people = [person]
-      person.employer = employer
+      company.employees = [person]
+      person.employer = company
       person.skills = [skill, skill2]
       skill.person = person
       skill2.person = person
     end
 
     describe "serialization of data" do
-      context "with a single top-level serializable object" do
+      context "with a single top-level serializable object that has relationship names different to model class" do
 
         context "without any includes" do
 
@@ -44,7 +44,7 @@ module Hat
           end
 
           it "doesn't serialize any relationships" do
-            expect(serialized[:linked][:employers]).to be_nil
+            expect(serialized[:linked][:companies]).to be_nil
             expect(serialized[:linked][:skills]).to be_nil
           end
 
@@ -64,7 +64,7 @@ module Hat
           end
 
           it "sideloads has_one relationships" do
-            expect(serialized[:linked][:employers].first[:name]).to eql person.employer.name
+            expect(serialized[:linked][:companies].first[:name]).to eql person.employer.name
           end
 
           it "sideloads has_many relationships" do
@@ -85,9 +85,9 @@ module Hat
         let(:serialized) { JSON.parse(PersonSerializer.new(relation).to_json).with_indifferent_access }
 
         before do
-          employer.people = [person, second_person]
-          person.employer = employer
-          second_person.employer = employer
+          company.employees = [person, second_person]
+          person.employer = company
+          second_person.employer = company
           person.skills = [skill]
           second_person.skills = []
           skill.person = person

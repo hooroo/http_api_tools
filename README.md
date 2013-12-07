@@ -241,8 +241,57 @@ In the previous example, the following model classes would be expected:
 * Post
 * Comment
 
-If keys for relationships are named something that deviates from the name of the class required to build them, this will not currently work.  This should be straight forward to implement however and will be done when the need arises.
+#### Deserializer Mappings
 
+At times, the name an objects key may deviate from it's type and can't be deserialized by convention alone.
+
+```javascript
+{
+ "users": [{
+    "id": 1,
+    "first_name": "John",
+    "last_name": "Smith",
+    "links": {
+      "posts": [3]
+    }
+ }],
+ "linked": {
+   posts: [
+    {
+      "id": 3,
+      "links": {
+        "author": 1
+      }
+    }
+  }
+}
+```
+
+In this example, the `user` is the `author` of the `post`. It is impossible to infer from the data that an `author` attribute key should map to a `user` type so we need to give it a helping hand. This can be done one per type by creating a `JsonDeserializerMapping` class. Like with serializers, deserializer mappings are convention based, using the model class name as a prefix.
+
+```ruby
+class PostDeserializerMapping
+
+  include Hat::JsonDeserializerMapping
+
+  map :author, User
+
+end
+```
+
+Whenever we're deserializing a `post`, the `author` attribute will always be deserialized to an instance of a `User`.
+
+This can also be applied against collections:
+
+```ruby
+class CompanyDeserializerMapping
+
+  include Hat::JsonDeserializerMapping
+
+  map :employees, Person
+
+end
+```
 
 ### Models
 Client models have some basic requirements that are catered to such as attribute definition, default values and type coercion.

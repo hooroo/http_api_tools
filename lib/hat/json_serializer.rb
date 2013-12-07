@@ -161,7 +161,7 @@ module Hat
         if relation_includes.includes_relation?(attr_name)
           if related = serializable.send(attr_name)
 
-            type_key = attr_name.to_s.pluralize.to_sym
+            type_key = type_key_for(related)#attr_name.to_s.pluralize.to_sym
 
             unless identity_map.get(type_key, related.id)
               related = serializable.send("#{attr_name}")
@@ -179,9 +179,10 @@ module Hat
         if relation_includes.includes_relation?(attr_name)
 
           has_many_relation = serializable.send("#{attr_name}") || []
-          type_key = attr_name
-
+          # type_key = attr_name
+          type_key = nil
           has_many_relation.each do |related|
+            type_key ||= type_key_for(related)
             sideload_item(related, attr_name, type_key) unless identity_map.get(type_key, related.id)
           end
         end
@@ -214,6 +215,10 @@ module Hat
 
     def root_key
       @_root_key ||= self.class.name.split("::").last.underscore.gsub('_serializer', '').pluralize.to_sym
+    end
+
+    def type_key_for(related)
+      related.class.name.underscore.pluralize
     end
 
     #----Module Inclusion
