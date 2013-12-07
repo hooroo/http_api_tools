@@ -1,9 +1,6 @@
 #Takes a json response based on the active-model-serializer relationship sideloading pattern
 #and given a root object key, builds an object graph with cyclic relationships.
 #See the id based pattern here - https://github.com/rails-api/active_model_serializers
-#This currently works completely by use of conventions. Keys in the json map to class names.
-#This could easily be extended to map keys to classes if we needed to break away from the convention
-#based approach.
 require 'active_support/core_ext/hash/indifferent_access'
 require 'hat/sideload_map'
 require 'hat/identity_map'
@@ -17,11 +14,6 @@ module Hat
       @identity_map = IdentityMap.new
       @sideload_map = SideloadMap.new(json, root_key)
       @key_to_class_mappings = {}
-    end
-
-    def map(key_to_class_mappings = {})
-      @key_to_class_mappings = key_to_class_mappings
-      self
     end
 
     def deserialize

@@ -9,11 +9,11 @@ module Hat
 
       base.class_attribute :_mappings
       base._mappings = {}
-      base.extend(ClassMethods)
+      base.extend(Dsl)
 
     end
 
-    module ClassMethods
+    module Dsl
       def map(attr_name, target_class)
         self._mappings[attr_name] = target_class
       end

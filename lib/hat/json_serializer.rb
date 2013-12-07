@@ -3,17 +3,19 @@ require "active_support/json"
 require 'active_support/core_ext/string/inflections'
 require 'hat/relation_includes'
 require 'hat/identity_map'
+require 'hat/type_key_resolver'
 
 module Hat
   module JsonSerializer
 
     attr_reader :serializable, :relation_includes, :result, :attribute_mappings, :has_one_mappings, :has_many_mappings, :cached
 
-    def initialize(serializable, options = {})
+    def initialize(serializable, attrs = {})
       @serializable = serializable
-      @result = options[:result] || {}
-      @relation_includes = options[:relation_includes] || RelationIncludes.new()
-      @identity_map = options[:identity_map] || IdentityMap.new
+      @result = attrs[:result] || {}
+      @relation_includes = attrs[:relation_includes] || RelationIncludes.new()
+      @identity_map = attrs[:identity_map] || IdentityMap.new
+      @type_key_resolver = attrs[:type_key_resolver] || TypeKeyResolver.new
       @meta_data = { type: root_key.to_s.singularize, root_key: root_key.to_s }
     end
 
@@ -30,7 +32,7 @@ module Hat
         id = serializable_item.id if serializable_item.respond_to? :id
         hashed = { id: id }
         result[root_key] << hashed
-        hashed.merge! serializer_class.new(serializable_item, { result: result, identity_map: identity_map }).includes(*relation_includes.to_a).to_hash
+        hashed.merge! serializer_class.new(serializable_item, { result: result, identity_map: identity_map, type_key_resolver: type_key_resolver }).includes(*relation_includes.to_a).to_hash
       end
 
       add_sideload_data_from_identity_map
@@ -85,6 +87,7 @@ module Hat
     private
 
     attr_writer :relation_includes
+    attr_reader :type_key_resolver
     attr_accessor :serializer_map, :meta_data
 
     def includes_meta_data
@@ -192,7 +195,7 @@ module Hat
     def sideload_item(related, attr_name, type_key)
       serializer_class = serializer_class_for(related)
       includes = relation_includes.nested_includes_for(attr_name) || []
-      hashed = serializer_class.new(related, { result: result, identity_map: identity_map }).includes(*includes).to_hash
+      hashed = serializer_class.new(related, { result: result, identity_map: identity_map, type_key_resolver: type_key_resolver }).includes(*includes).to_hash
 
       identity_map.put(type_key, related.id, hashed)
     end
@@ -208,17 +211,12 @@ module Hat
       "#{model.class.name}Serializer".constantize
     end
 
-    def is_active_record_relation?(relation)
-      #This is a pretty terrible way to test for this. find a better way
-      serializable.respond_to? :klass
-    end
-
     def root_key
       @_root_key ||= self.class.name.split("::").last.underscore.gsub('_serializer', '').pluralize.to_sym
     end
 
     def type_key_for(related)
-      related.class.name.underscore.pluralize
+      type_key_resolver.for_class(related.class)
     end
 
     #----Module Inclusion
@@ -232,11 +230,11 @@ module Hat
       base._attributes = []
       base._relationships = { has_ones: [], has_manys: [] }
 
-      base.extend(ClassMethods)
+      base.extend(Dsl)
 
     end
 
-    module ClassMethods
+    module Dsl
       def attributes(*args)
         self._attributes = args
       end
