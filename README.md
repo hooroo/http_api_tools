@@ -267,7 +267,7 @@ At times, the name an object's key may deviate from it's type and can't be deser
 }
 ```
 
-In this example, the `user` is the `author` of the `post`. It is impossible to infer from the data that an `author` attribute key should map to a `user` type so we need to give it a helping hand. This can be done one per type by creating a `JsonDeserializerMapping` class. Like with serializers, deserializer mappings are convention based, using the model class name as a prefix.
+In this example, the `user` is the `author` of the `post`. It is impossible to infer from the data that an `author` attribute key should map to a `User` type so we need to give it a helping hand. This can be done once per type by creating a `JsonDeserializerMapping` class. Like with serializers, deserializer mappings are convention based, using the model class name as a prefix.
 
 ```ruby
 class PostDeserializerMapping
