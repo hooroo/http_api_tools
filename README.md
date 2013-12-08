@@ -243,7 +243,7 @@ In the previous example, the following model classes would be expected:
 
 #### Deserializer Mappings
 
-At times, the name an object's key may deviate from it's type and can't be deserialized by convention alone.
+At times, the name of an object's key may deviate from it's type and can't be deserialized by convention alone.
 
 ```javascript
 {
