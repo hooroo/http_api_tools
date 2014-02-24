@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 require 'spec_helper'
 require 'hat/json_serializer'
 
@@ -27,11 +29,13 @@ module Hat
           let(:serialized_person) { serialized[:people].first }
 
           it "serializes basic attributes" do
-
             expect(serialized_person[:id]).to eql person.id
             expect(serialized_person[:first_name]).to eql person.first_name
             expect(serialized_person[:last_name]).to eql person.last_name
-            expect(serialized_person[:id]).to eql person.id
+          end
+
+          it 'expect basic attributes with no value' do
+            expect(serialized_person.has_key?(:dob)).to be_true
           end
 
           it "serializes attributes defined as methods on the serializer" do

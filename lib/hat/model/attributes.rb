@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 require "active_support/core_ext/class/attribute"
 require "hat/model/type_coercions"
 
@@ -18,14 +20,36 @@ module Hat
 
       def initialize(attrs = {})
         attrs = attrs.with_indifferent_access
+        set_read_only = attrs.delete(:set_read_only)
         attributes.each do |attr_name, options|
           value = attrs[attr_name] || default_for(options)
+          next unless value != nil
           if coercion_type = options[:type]
             value = self.send("to_#{coercion_type}", value)
           end
-          self.send("#{attr_name}=", value)
+          if options[:read_only] && set_read_only
+            instance_variable_set("@#{attr_name}",value)
+          elsif
+            self.send("#{attr_name}=", value)
+          end
         end
         self.errors = attrs[:errors] || {}
+      end
+
+      def as_json(opts = {})
+        json = {}
+
+        attributes = self.attributes
+
+        if opts[:exclude_read_only]
+          attributes = attributes.delete_if {|_, options| options[:read_only]}
+        end
+
+        attributes.each do |attr_name, options|
+          json[attr_name] = self.send(attr_name)
+        end
+
+        json.merge(errors: self.errors)
       end
 
       def attributes
@@ -65,7 +89,11 @@ module Hat
 
         def attribute(name, options = {})
           self._attributes[name] = options
-          self.send(:attr_accessor, name.to_sym)
+          if options[:read_only]
+            self.send(:attr_reader, name.to_sym)
+          else
+            self.send(:attr_accessor, name.to_sym)
+          end
         end
 
       end
