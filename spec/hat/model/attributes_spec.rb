@@ -140,6 +140,12 @@ module Hat
               }
             )
           end
+
+          it 'does not remove the read_only attributes from the original attributes hash' do
+            test_model = test_model_class.new
+            test_model.as_json(exclude_read_only: true)
+            expect(test_model.attributes).to include(:created_at)
+          end
         end
       end
 

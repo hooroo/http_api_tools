@@ -37,7 +37,7 @@ module Hat
       relations = {}
 
       #we have to add this before we process subtree or we'll get circular issues
-      target = target_class.new(json_item.with_indifferent_access.merge(:set_read_only => true))
+      target = target_class.new(json_item.merge(:set_read_only => true).with_indifferent_access)
       target_class_name = target_class.name
 
       identity_map.put(target_class_name, json_item['id'], target)

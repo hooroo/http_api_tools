@@ -42,7 +42,7 @@ module Hat
         attributes = self.attributes
 
         if opts[:exclude_read_only]
-          attributes = attributes.delete_if {|_, options| options[:read_only]}
+          attributes = attributes.reject {|_, options| options[:read_only]}
         end
 
         attributes.each do |attr_name, options|
