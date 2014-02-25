@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 require 'hat/json_deserializer_mapping'
 
 class CompanyDeserializerMapping

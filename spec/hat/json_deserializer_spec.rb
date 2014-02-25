@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 require 'spec_helper'
 require 'hat/json_deserializer'
 require 'hat/support/company_deserializer_mapping'
@@ -16,6 +18,7 @@ module Hat
         'companies' => [{
           'id' => 1,
           'name' => "Hooroo",
+          'brand' => "We are travellers or something",
           'links' => {
             'employees' => [10, 11, 12],
             'address' => 20,
@@ -47,6 +50,10 @@ module Hat
       it "creates model from the root object" do
         expect(company.id).to eq json['companies'][0]['id']
         expect(company.name).to eq json['companies'][0]['name']
+      end
+
+      it "can set read-only attributes" do
+        expect(company.brand).to eq json['companies'][0]['brand']
       end
 
       it "includes sideloaded has many relationships" do

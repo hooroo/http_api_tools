@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 #Takes a json response based on the active-model-serializer relationship sideloading pattern
 #and given a root object key, builds an object graph with cyclic relationships.
 #See the id based pattern here - https://github.com/rails-api/active_model_serializers
@@ -35,7 +37,7 @@ module Hat
       relations = {}
 
       #we have to add this before we process subtree or we'll get circular issues
-      target = target_class.new(json_item.with_indifferent_access)
+      target = target_class.new(json_item.with_indifferent_access.merge(:set_read_only => true))
       target_class_name = target_class.name
 
       identity_map.put(target_class_name, json_item['id'], target)

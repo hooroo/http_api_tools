@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 require 'hat/model'
 
 
@@ -33,6 +35,7 @@ class Company
   attribute :suppliers
   attribute :parent_company
   attribute :address
+  attribute :brand, read_only: true
 
   def employee_ids
     employees.map(&:id)
@@ -65,4 +68,3 @@ class Address
   end
 
 end
-
