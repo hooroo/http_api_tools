@@ -14,6 +14,8 @@ module Hat
           attribute :name
           attribute :dob, type: :date_time
           attribute :tags, default: []
+          attribute :qualifications, default: {thing: 1}
+          attribute :source, default: 'internal'
         end
       end
 
@@ -31,8 +33,16 @@ module Hat
           expect(test_model.dob).to eq DateTime.parse(date_time_string)
         end
 
-        it "sets default if provided" do
+        it "sets default array if provided" do
           expect(test_model_class.new.tags).to eq []
+        end
+
+        it "sets default hash if provided" do
+          expect(test_model_class.new.qualifications).to eq({thing: 1})
+        end
+
+        it "sets default primitive if provided" do
+          expect(test_model_class.new.source).to eq 'internal'
         end
 
         it "multiple objects with default array don't share the same default reference" do

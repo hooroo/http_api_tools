@@ -64,6 +64,8 @@ module Hat
           [].concat(default)
         elsif default.kind_of? Hash
           default.dup
+        else
+          default
         end
       end
 
