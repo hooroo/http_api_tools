@@ -1,3 +1,4 @@
+require 'spec_helper'
 require 'hat/relation_includes'
 
 module Hat
@@ -16,16 +17,16 @@ module Hat
     describe 'equality' do
 
       it 'works as expected' do
-        one = [ :tags, {images: [:comments]}, {reviews: [:author]} ]
-        two = [ :tags, {images: [:comments]}, {reviews: [:author]} ]
+        one = [ :tags, { images: [:comments] }, { reviews: [:author] } ]
+        two = [ :tags, { images: [:comments] }, { reviews: [:author] } ]
         expect(RelationIncludes.new(*one)).to eq RelationIncludes.new(*two)
 
-        one = [ {reviews: [:author]}, :tags, {images: [:comments]} ]
-        two = [ :tags, {images: [:comments]}, {reviews: [:author]} ]
+        one = [ { reviews: [:author] }, :tags, { images: [:comments] } ]
+        two = [ :tags, { images: [:comments] }, { reviews: [:author] } ]
         expect(RelationIncludes.new(*one)).to eq RelationIncludes.new(*two)
 
-        one = [ :tags, {images: [:comments]}, {reviews: [:author]} ]
-        two = [ :tags, {images: [:comments]}, :reviews ]
+        one = [ :tags, { images: [:comments] }, { reviews: [:author] } ]
+        two = [ :tags, { images: [:comments] }, :reviews ]
         expect(RelationIncludes.new(*one)).to_not eq RelationIncludes.new(*two)
       end
     end
@@ -41,7 +42,7 @@ module Hat
       end
 
       it 'creates nested includes' do
-        expect(includes).to include({a: [{b: [:c]}]})
+        expect(includes).to include({ a: [{ b: [:c] }] })
       end
 
       it 'creates same structure when implicit parts of the path are removed' do
@@ -62,58 +63,58 @@ module Hat
     describe "#to_s" do
 
       it "converts to dot-notation specified by the JSON API spec, sorted alphabetically" do
-        includes = RelationIncludes.new(:reviews, {images: [{comments: [:author]}]}, :hashtags)
+        includes = RelationIncludes.new(:reviews, { images: [{ comments: [:author] }] }, :hashtags)
         expect(includes.to_s).to eq 'hashtags,images,images.comments,images.comments.author,reviews'
 
-        includes = RelationIncludes.new(:hashtags, {images: [{comments: [:author, :rating]}]}, :reviews)
+        includes = RelationIncludes.new(:hashtags, { images: [{ comments: [:author, :rating] }] }, :reviews)
         expect(includes.to_s).to eq 'hashtags,images,images.comments,images.comments.author,images.comments.rating,reviews'
       end
     end
 
     describe '#&' do
 
-      let(:relations) { [ :tags, {images: [:comments]}, {reviews: [:author]} ] }
+      let(:relations) { [ :tags, { images: [:comments] }, { reviews: [:author] } ] }
       let(:includes)  { RelationIncludes.new(*relations) }
 
       let(:scenarios) do
         [
           {
-            includes: [ {images: [:comments]} ],
-            other:    [ {images: [:comments]} ],
-            expected: [ {images: [:comments]} ]
+            includes: [ { images: [:comments] } ],
+            other:    [ { images: [:comments] } ],
+            expected: [ { images: [:comments] } ]
           },
           {
-            includes: [ {images: [:comments, :hashtags]} ],
-            other:    [ {images: [:comments]} ],
-            expected: [ {images: [:comments]} ]
+            includes: [ { images: [:comments, :hashtags]} ],
+            other:    [ { images: [:comments] } ],
+            expected: [ { images: [:comments] } ]
           },
           {
-            includes: [ {images: [:comments]} ],
-            other:    [ {images: [:comments, :hashtags]} ],
-            expected: [ {images: [:comments]} ]
+            includes: [ { images: [:comments] } ],
+            other:    [ { images: [:comments, :hashtags] } ],
+            expected: [ { images: [:comments] } ]
           },
           {
-            includes: [ :reviews, {images: [{comments: [:author]}]}, :hashtags ],
-            other:    [ :reviews, {images: [{comments: [:author]}]}, :hashtags ],
-            expected: [ :reviews, {images: [{comments: [:author]}]}, :hashtags ]
+            includes: [ :reviews, { images: [{ comments: [:author] }] }, :hashtags ],
+            other:    [ :reviews, { images: [{ comments: [:author] }] }, :hashtags ],
+            expected: [ :reviews, { images: [{ comments: [:author] }] }, :hashtags ]
           },
           {
-            includes: [ :reviews, {images: [{comments: [:author]}]} ],
-            other:    [ :reviews, {images: [ :comments ]} ],
-            expected: [ :reviews, {images: [ :comments ]} ]
+            includes: [ :reviews, { images: [{ comments: [:author] }] } ],
+            other:    [ :reviews, { images: [ :comments ]} ],
+            expected: [ :reviews, { images: [ :comments ]} ]
           },
           {
-            includes: [ :reviews, {images: [ :comments ]} ],
-            other:    [ :reviews, {images: [{comments: [:author]}]} ],
-            expected: [ :reviews, {images: [ :comments ]} ]
+            includes: [ :reviews, { images: [ :comments ]} ],
+            other:    [ :reviews, { images: [{ comments: [:author] }] } ],
+            expected: [ :reviews, { images: [ :comments ]} ]
           },
           {
-            includes: [ :reviews, {images: [{comments: [:author]}]} ],
+            includes: [ :reviews, { images: [{ comments: [:author] }] } ],
             other:    [ :reviews, :images ],
             expected: [ :reviews, :images ]
           },
           {
-            includes: [ :reviews, {images: [{comments: [:author]}]} ],
+            includes: [ :reviews, {images: [{ comments: [:author] }] } ],
             other:    [ :reviews, :images, :hashtags ],
             expected: [ :reviews, :images ]
           }
@@ -135,7 +136,7 @@ module Hat
 
     describe "#includes_relation?" do
 
-      let(:includes) { RelationIncludes.new(:a, {b: [:c]}) }
+      let(:includes) { RelationIncludes.new(:a, { b: [:c] }) }
 
       it "includes correct relations when a symbol" do
         expect(includes.includes_relation?(:a)).to be_true
@@ -153,7 +154,7 @@ module Hat
 
     describe "#include" do
 
-      let(:includes) { RelationIncludes.new(:a, {b: [:c]}) }
+      let(:includes) { RelationIncludes.new(:a, { b: [:c] }) }
 
       it "includes new relations" do
         includes.include([:y, :z])
@@ -164,22 +165,31 @@ module Hat
 
     describe "#find"  do
 
-      let(:includes) { RelationIncludes.new(:a, {b: [:c]}) }
+      let(:includes) { RelationIncludes.new(:a, { b: [:c] }) }
 
       it "finds include by key" do
-        expect(includes.find(:b)).to eq({b: [:c]})
+        expect(includes.find(:b)).to eq({ b: [:c] })
       end
     end
 
     describe "#nested_includes_for"  do
 
-      let(:includes) { RelationIncludes.new(:a, {b: [:c]}) }
+      let(:includes) { RelationIncludes.new(:a, { b: [:c] }) }
 
       it "returns nested includes" do
         expect(includes.nested_includes_for(:b)).to eq([:c])
       end
     end
 
+    describe "#for_serializable_model" do
+
+      let(:includes) { RelationIncludes.new(:employer, { skills: [:person] }).for_serializable_model(Person) }
+
+      it "includes all relationships" do
+        expect(includes.find(:employer)).to eq({ employer: [:employees] })
+      end
+
+    end
 
   end
 end

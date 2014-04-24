@@ -26,6 +26,52 @@ module Hat
       new(*flatten(includes_hash))
     end
 
+    def for_serializable_model(model_class)
+
+      new_includes = []
+      original_includes = self.to_a
+
+      append_deep_relation_includes_for(model_class, original_includes, new_includes)
+
+      RelationIncludes.new(*new_includes)
+    end
+
+    def append_deep_relation_includes_for(model_class, original_includes, new_includes)
+
+      serializer = "#{model_class.name}Serializer".constantize
+      has_manys = serializer.has_manys
+      has_ones = serializer.has_ones
+
+      has_manys.each do |has_many_name|
+        new_includes << has_many_name unless RelationIncludes.new(*original_includes).find(has_many_name)#.empty?
+      end
+
+      original_includes.each do |include_item|
+        if include_item.kind_of?(Symbol)
+
+          related_model_class = model_class.reflections[include_item].class_name.constantize
+
+          new_nested_includes = []
+          new_includes << { include_item => new_nested_includes }
+
+          append_deep_relation_includes_for(related_model_class, [], new_nested_includes)
+
+        elsif include_item.kind_of?(Hash)
+
+          nested_include_key = include_item.keys.first
+          nested_includes = include_item[nested_include_key]
+
+          related_model_class = model_class.reflections[nested_include_key].class_name.constantize
+
+          new_nested_includes = []
+          new_includes << { nested_include_key => new_nested_includes }
+
+          append_deep_relation_includes_for(related_model_class, nested_includes, new_nested_includes)
+        end
+      end
+
+    end
+
     def to_s
       @to_s ||= begin
         paths = []
@@ -75,6 +121,10 @@ module Hat
         nested[attr_name]
       end
     end
+
+    protected
+
+
 
     private
 

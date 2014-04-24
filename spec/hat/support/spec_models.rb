@@ -1,6 +1,7 @@
 # encoding: utf-8
 
 require 'hat/model'
+require 'ostruct'
 
 
 class Person
@@ -19,8 +20,16 @@ class Person
     employer.try(:id)
   end
 
-  def skill_ids
-    skills.map(&:id)
+  # def skill_ids
+  #   skills.map(&:id)
+  # end
+
+  #Act like active record for reflectively interogating type info
+  def self.reflections
+    {
+      employer: OpenStruct.new(class_name: 'Company'),
+      skills:   OpenStruct.new(class_name: 'Skill')
+    }
   end
 
 end
@@ -37,8 +46,18 @@ class Company
   attribute :address
   attribute :brand, read_only: true
 
-  def employee_ids
-    employees.map(&:id)
+  # def employee_ids
+  #   employees.map(&:id)
+  # end
+
+  #Act like active record for reflectively interogating type info
+  def self.reflections
+    {
+      employees:      OpenStruct.new(class_name: 'Person'),
+      suppliers:      OpenStruct.new(class_name: 'Company'),
+      parent_company: OpenStruct.new(class_name: 'Company'),
+      address:        OpenStruct.new(class_name: 'Address')
+    }
   end
 
 end
@@ -54,6 +73,13 @@ class Skill
 
   def person_id
     person.try(:id)
+  end
+
+  #Act like active record for reflectively interogating type info
+  def self.reflections
+    {
+      person: OpenStruct.new(class_name: 'Person')
+    }
   end
 
 end

@@ -13,7 +13,7 @@ module Hat
     def initialize(serializable, attrs = {})
       @serializable = serializable
       @result = attrs[:result] || {}
-      @relation_includes = attrs[:relation_includes] || RelationIncludes.new()
+      @relation_includes = attrs[:relation_includes] || RelationIncludes.new
       @identity_map = attrs[:identity_map] || IdentityMap.new
       @type_key_resolver = attrs[:type_key_resolver] || TypeKeyResolver.new
       @meta_data = { type: root_key.to_s.singularize, root_key: root_key.to_s }
@@ -43,12 +43,15 @@ module Hat
     end
 
     def includes(*includes)
+
       if includable
         allowable_includes_to_add = RelationIncludes.new(*includes) & includable
       else
         allowable_includes_to_add = includes
       end
+
       relation_includes.include(allowable_includes_to_add)
+
       self
     end
 
@@ -66,19 +69,20 @@ module Hat
     end
 
     def has_ones
-      self.class._relationships[:has_ones]
+      self.class.has_ones
     end
 
     def has_manys
-      self.class._relationships[:has_manys]
+      self.class.has_manys
     end
+
 
     def includable
       self.class._includable
     end
 
     def to_hash
-      hash = attribute_hash.merge({links: has_one_hash.merge(has_many_hash)})
+      hash = attribute_hash.merge(links: has_one_hash.merge(has_many_hash))
       sideload_has_ones
       sideload_has_manys
       hash
@@ -141,11 +145,13 @@ module Hat
       has_manys.each do |attr_name|
         has_many_relation = serializable.send(attr_name) || []
 
-        if has_many_relation.respond_to?(:pluck)
-          ids = has_many_relation.pluck(:id)
-        else
-          ids = has_many_relation.map(&:id)
-        end
+        # if has_many_relation.respond_to?(:pluck)
+        #   ids = has_many_relation.pluck(:id)
+        # else
+        #   ids = has_many_relation.map(&:id)
+        # end
+
+        ids = has_many_relation.map(&:id)
 
         has_many_hash[attr_name] = ids
 
@@ -182,12 +188,13 @@ module Hat
         if relation_includes.includes_relation?(attr_name)
 
           has_many_relation = serializable.send("#{attr_name}") || []
-          # type_key = attr_name
           type_key = nil
+
           has_many_relation.each do |related|
             type_key ||= type_key_for(related)
             sideload_item(related, attr_name, type_key) unless identity_map.get(type_key, related.id)
           end
+
         end
       end
     end
@@ -201,7 +208,9 @@ module Hat
     end
 
     def add_sideload_data_from_identity_map
+
       linked = result[:linked] = {}
+
       identity_map.to_hash.each do |key, type_map|
         linked[key] = type_map.values
       end
@@ -235,16 +244,25 @@ module Hat
     end
 
     module Dsl
+
+      def has_ones
+        self._relationships[:has_ones]
+      end
+
+      def has_manys
+        self._relationships[:has_manys]
+      end
+
       def attributes(*args)
         self._attributes = args
       end
 
       def has_one(has_one)
-        self._relationships[:has_ones] << has_one
+        self.has_ones << has_one
       end
 
       def has_many(has_many)
-        self._relationships[:has_manys] << has_many
+        self.has_manys << has_many
       end
 
       def includable(*includes)
