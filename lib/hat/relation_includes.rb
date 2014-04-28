@@ -32,14 +32,7 @@ module Hat
     # will be used to serialize the models to ensure that each of the models who's ids are
     # to be serialized are included in the main query. This effectively removes n+1 query issues
     def for_query_on(model_class)
-
-      # query_includes = []
-      # expand_includes_for_has_many_ids(model_class, self.to_a, query_includes)
-
-      # RelationIncludes.new(*query_includes)
-
       RelationIncludes.new(*ExpandedRelationIncludes.new(self, model_class))
-
     end
 
     def to_s
@@ -95,52 +88,6 @@ module Hat
     private
 
     attr_accessor :includes
-
-    def expand_includes_for_has_many_ids(model_class, serializer_includes, query_includes)
-
-      append_has_many_includes(model_class, serializer_includes, query_includes)
-
-      serializer_includes.each do |include_item|
-        if include_item.kind_of?(Symbol)
-          expand_includes_for_symbol(include_item, model_class, query_includes)
-        elsif include_item.kind_of?(Hash)
-          expand_includes_for_hash(include_item, model_class, query_includes)
-        end
-      end
-
-    end
-
-    def expand_includes_for_symbol(include_item, model_class, query_includes)
-
-      related_model_class = model_class.reflections[include_item].class_name.constantize
-      new_nested_includes = []
-
-      query_includes << { include_item => new_nested_includes }
-      append_has_many_includes(related_model_class, [], new_nested_includes)
-
-    end
-
-    def expand_includes_for_hash(include_item, model_class, query_includes)
-
-      nested_include_key = include_item.keys.first
-      nested_includes = include_item[nested_include_key]
-      related_model_class = model_class.reflections[nested_include_key].class_name.constantize
-      new_nested_includes = []
-
-      query_includes << { nested_include_key => new_nested_includes }
-      expand_includes_for_has_many_ids(related_model_class, nested_includes, new_nested_includes)
-
-    end
-
-    def append_has_many_includes(model_class, serializer_includes, query_includes)
-
-      serializer = "#{model_class.name}Serializer".constantize
-
-      serializer.has_manys.each do |has_many_attr|
-        query_includes << has_many_attr unless RelationIncludes.new(*serializer_includes).find(has_many_attr)
-      end
-
-    end
 
     def self.build_hash_from_string(string)
       includes_hash = {}
