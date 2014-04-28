@@ -1,4 +1,5 @@
 require 'active_support/core_ext'
+require 'hat/expanded_relation_includes'
 
 # Hopefully the spec is robust enough that we can
 # break this down and refactor as we go. I'm not
@@ -32,10 +33,12 @@ module Hat
     # to be serialized are included in the main query. This effectively removes n+1 query issues
     def for_query_on(model_class)
 
-      query_includes = []
-      expand_includes_for_has_many_ids(model_class, self.to_a, query_includes)
+      # query_includes = []
+      # expand_includes_for_has_many_ids(model_class, self.to_a, query_includes)
 
-      RelationIncludes.new(*query_includes)
+      # RelationIncludes.new(*query_includes)
+
+      RelationIncludes.new(*ExpandedRelationIncludes.new(self, model_class))
 
     end
 
