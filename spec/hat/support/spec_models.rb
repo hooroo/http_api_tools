@@ -20,10 +20,6 @@ class Person
     employer.try(:id)
   end
 
-  # def skill_ids
-  #   skills.map(&:id)
-  # end
-
   #Act like active record for reflectively interogating type info
   def self.reflections
     {
@@ -45,10 +41,6 @@ class Company
   attribute :parent_company
   attribute :address
   attribute :brand, read_only: true
-
-  # def employee_ids
-  #   employees.map(&:id)
-  # end
 
   #Act like active record for reflectively interogating type info
   def self.reflections
