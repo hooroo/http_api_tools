@@ -99,27 +99,33 @@ module Hat
 
       serializer_includes.each do |include_item|
         if include_item.kind_of?(Symbol)
-
-          related_model_class = model_class.reflections[include_item].class_name.constantize
-
-          new_nested_includes = []
-          query_includes << { include_item => new_nested_includes }
-
-          append_has_many_includes(related_model_class, [], new_nested_includes)
-
+          expand_includes_for_symbol(include_item, model_class, query_includes)
         elsif include_item.kind_of?(Hash)
-
-          nested_include_key = include_item.keys.first
-          nested_includes = include_item[nested_include_key]
-
-          related_model_class = model_class.reflections[nested_include_key].class_name.constantize
-
-          new_nested_includes = []
-          query_includes << { nested_include_key => new_nested_includes }
-
-          expand_includes_for_has_many_ids(related_model_class, nested_includes, new_nested_includes)
+          expand_includes_for_hash(include_item, model_class, query_includes)
         end
       end
+
+    end
+
+    def expand_includes_for_symbol(include_item, model_class, query_includes)
+
+      related_model_class = model_class.reflections[include_item].class_name.constantize
+      new_nested_includes = []
+
+      query_includes << { include_item => new_nested_includes }
+      append_has_many_includes(related_model_class, [], new_nested_includes)
+
+    end
+
+    def expand_includes_for_hash(include_item, model_class, query_includes)
+
+      nested_include_key = include_item.keys.first
+      nested_includes = include_item[nested_include_key]
+      related_model_class = model_class.reflections[nested_include_key].class_name.constantize
+      new_nested_includes = []
+
+      query_includes << { nested_include_key => new_nested_includes }
+      expand_includes_for_has_many_ids(related_model_class, nested_includes, new_nested_includes)
 
     end
 
