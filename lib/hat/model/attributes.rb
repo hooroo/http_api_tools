@@ -19,21 +19,16 @@ module Hat
       include TypeCoercions
 
       def initialize(attrs = {})
+
         attrs = attrs.with_indifferent_access
-        set_read_only = attrs.delete(:set_read_only)
-        attributes.each do |attr_name, options|
-          value = attrs[attr_name] || default_for(options)
-          next unless value != nil
-          if coercion_type = options[:type]
-            value = self.send("to_#{coercion_type}", value)
-          end
-          if options[:read_only] && set_read_only
-            instance_variable_set("@#{attr_name}",value)
-          elsif
-            self.send("#{attr_name}=", value)
-          end
+
+        attributes.each do |attr_name, attr_options|
+          raw_value = attrs[attr_name] || default_for(attr_options)
+          set_raw_value(attr_name, raw_value, true) unless raw_value == nil
         end
+
         self.errors = attrs[:errors] || {}
+
       end
 
       def as_json(opts = {})
@@ -54,6 +49,28 @@ module Hat
 
       def attributes
         self.class._attributes
+      end
+
+      private
+
+      def set_raw_value(attr_name, raw_value, apply_if_read_only = false)
+
+        attr_def = attributes[attr_name]
+        value = coerced_value(raw_value, attr_def[:type])
+
+        if attr_def[:read_only] && apply_if_read_only
+          instance_variable_set("@#{attr_name}", value)
+        elsif
+          self.send("#{attr_name}=", value)
+        end
+      end
+
+      def coerced_value(raw_value, coercion_type)
+        if coercion_type
+          value = self.send("to_#{coercion_type}", raw_value)
+        else
+          raw_value
+        end
       end
 
       #make sure we don't pass references to the same default object to each instance. Copy/dup where appropriate

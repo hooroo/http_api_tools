@@ -79,32 +79,25 @@ module Hat
 
           let(:test_model) { test_model_with_read_only_attribute_class.new }
 
-          context "the read-only variable" do
-            context "the initializer" do
-              context "when set_read_only not provided" do
-                it "when passing a read-only variable into the initializer should raise a no method error" do
-                  expect{test_model_with_read_only_attribute_class.new(created_at: Time.now)}.to raise_error(NoMethodError)
-                end
+          context "when setting the read-only variable" do
+            describe "initialize" do
+              it "sets the read only value" do
+                now = Time.now
+                test_object = test_model_with_read_only_attribute_class.new(created_at: now)
+                expect(test_object.created_at).to eq now
               end
 
-              context "when set_read_only set to true" do
-                it "when passing a read-only variable into the initializer should raise a no method error" do
-                  value = Time.now
-                  model = test_model_with_read_only_attribute_class.new(created_at: value, set_read_only: true)
-                  expect(model.created_at).to eq value
-                end
-              end
             end
 
             it "only allows reading of that attribute" do
-              expect{test_model.created_at = Time.now}.to raise_error(NoMethodError)
+              expect{ test_model.created_at = Time.now }.to raise_error(NoMethodError)
               expect(test_model.created_at).to be_nil
             end
           end
 
-          context "the non read-only variable" do
+          context "when setting the non read-only variable" do
             it "allows reading and writing" do
-              value = Time.now
+              value = 'value'
               test_model.some_cool_value = value
               expect(test_model.some_cool_value).to eql value
             end
