@@ -1,5 +1,4 @@
-# Hooroo API Tools
-Terribly named, in a rush - if you have a good one, lets change it.
+# Http API Tools
 
 Provides fast serialization/deserialization of models with simple model attribute definition in client apps.
 

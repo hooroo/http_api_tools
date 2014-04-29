@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.version       = Hat::VERSION
   spec.authors       = ["Rob Monie"]
   spec.email         = ["robmonie@gmail.com"]
-  spec.description   = %q{Hooroo API Tools - proper name tbd.}
+  spec.description   = %q{Http API Tools - proper name tbd.}
   spec.summary       = %q{Provides JSON serialization/deserialization and basic model attribute definition for client apps}
   spec.homepage      = ""
   spec.license       = "MIT"
