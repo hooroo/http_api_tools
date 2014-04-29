@@ -317,7 +317,28 @@ end
 This will define a User class with attr_accessors for all attributes defined. The initialize method will accept a hash of values which will be passed through type coercions when configured and have defaults applied when no value is passed in for a key.
 
 At this stage type coercion is limited and there's no way to define types outside the gem. This will change when the need arises or we get around to it. For now if a type coercion makes sense to add for all apps, it should be added to `type_coercions.rb`.
+See: https://github.com/hooroo/hooroo-api-tools/issues/5
 
+#### Read only attributes
+Sometimes it's useful to define a field as readonly. The intent being that we prevent changing an attribute value that shouldn't be changed or prevent a value from being serialized and sent in the payload that the server won't accept.
+
+In the previous example, it might be better to set the `created_at` field as readonly:
+
+```ruby
+class User
+
+  include Hat::Model::Attributes
+  include Hat::Model::ActsLikeActiveModel
+
+  attribute :id
+  attribute :first_name
+  attribute :last_name
+  attribute :created_at: type: :date_time, read_only: true
+  attribute :posts, default: []
+  attribute :profile
+
+end
+```
 
 ### Polymorphism
 At this point, polymorphic relationships are not catered for but they can be when the need arises.
@@ -333,7 +354,6 @@ Until we have a more robust way of tracking performance over time, please do som
 
 
 ## To Do
-* Support serialization/deserialization of relationships with a key that differs from the type
 * Support polymorhic relationships
 * Support the Json Api UPDATES spec
 

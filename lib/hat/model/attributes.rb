@@ -31,6 +31,8 @@ module Hat
 
       end
 
+      # This method is not really satisfactory. It doesn't take into account relationships and
+      # really only services a narrow use case. See - https://github.com/hooroo/hooroo-api-tools/issues/6
       def as_json(opts = {})
         json = {}
 
