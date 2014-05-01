@@ -93,10 +93,6 @@ module Hat
       { includable: includable.to_s, included: relation_includes.to_s }
     end
 
-    def assert_id_present(serializable_item)
-      raise "serializable items must have an id attribute" unless serializable_item.respond_to?(:id)
-    end
-
     def serialize_item_and_cache_relationships(serializable_item)
 
       assert_id_present(serializable_item)
@@ -167,19 +163,11 @@ module Hat
 
       has_ones.each do |attr_name|
 
-        id_attr = "#{attr_name}_id".to_sym
-
-        if relation_includes.includes_relation?(attr_name)
-          if related = serializable.send(attr_name)
-
-            type_key = type_key_for(related)#attr_name.to_s.pluralize.to_sym
-
-            unless identity_map.get(type_key, related.id)
-              related = serializable.send("#{attr_name}")
-              sideload_item(related, attr_name, type_key)
-            end
-          end
+        if related_item = get_relation(attr_name)
+          type_key = type_key_for(related_item)
+          sideload_item(related_item, attr_name, type_key) unless identity_map.get(type_key, related_item.id)
         end
+
       end
     end
 
@@ -187,18 +175,21 @@ module Hat
 
       has_manys.each do |attr_name|
 
-        if relation_includes.includes_relation?(attr_name)
+        if related_items = get_relation(attr_name)
 
-          has_many_relation = serializable.send("#{attr_name}") || []
           type_key = nil
 
-          has_many_relation.each do |related|
+          related_items.each do |related|
             type_key ||= type_key_for(related)
             sideload_item(related, attr_name, type_key) unless identity_map.get(type_key, related.id)
           end
 
         end
       end
+    end
+
+    def get_relation(attr_name)
+      serializable.send(attr_name) if relation_includes.includes_relation?(attr_name)
     end
 
     def sideload_item(related, attr_name, type_key)
@@ -230,6 +221,10 @@ module Hat
 
     def serializer_class_for(model)
       "#{model.class.name}Serializer".constantize
+    end
+
+    def assert_id_present(serializable_item)
+      raise "serializable items must have an id attribute" unless serializable_item.respond_to?(:id)
     end
 
     def root_key
