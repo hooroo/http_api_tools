@@ -356,8 +356,6 @@ spec for serialization that dumps some timings and creates a profile report in `
 
 Until we have a more robust way of tracking performance over time, please do some before and after tests against this when you make changes. Even small things have been found to introduce big performance issues.
 
-## Continuous Integration
-Currently running on Travis CI - https://travis-ci.org/hooroo/http-api-tools
 
 ## To Do
 * Support polymorhic relationships
