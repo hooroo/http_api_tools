@@ -33,7 +33,7 @@ module Hat
       end
 
       result[:meta] = meta_data.merge(includes_meta_data)
-      result[:linked] = sideload_data_from_identity_map
+      result[:linked] = extract_sideload_data_from_identity_map
 
       result
     end
@@ -71,7 +71,6 @@ module Hat
     def has_manys
       self.class.has_manys
     end
-
 
     def includable
       self.class._includable
@@ -112,7 +111,7 @@ module Hat
       attribute_hash = {}
 
       attributes.each do |attr_name|
-        if self.respond_to? attr_name
+        if self.respond_to?(attr_name)
           attribute_hash[attr_name] = self.send(attr_name)
         else
           attribute_hash[attr_name] = serializable.send(attr_name)
@@ -180,9 +179,9 @@ module Hat
 
           type_key = nil
 
-          related_items.each do |related|
-            type_key ||= type_key_for(related)
-            sideload_item(related, attr_name, type_key) unless identity_map.get(type_key, related.id)
+          related_items.each do |related_item|
+            type_key ||= type_key_for(related_item)
+            sideload_item(related_item, attr_name, type_key) unless identity_map.get(type_key, related_item.id)
           end
 
         end
@@ -201,7 +200,7 @@ module Hat
       identity_map.put(type_key, related.id, hashed)
     end
 
-    def sideload_data_from_identity_map
+    def extract_sideload_data_from_identity_map
       identity_map.to_hash.inject({}) do |sideload_data, (key, type_map)|
         sideload_data[key] = type_map.values
         sideload_data
