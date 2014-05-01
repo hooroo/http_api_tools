@@ -25,19 +25,9 @@ module Hat
 
     def as_json(*args)
 
-      result[root_key] = []
-
-      Array(serializable).each do |serializable_item|
-        serializer_class = serializer_class_for(serializable_item)
-        id = serializable_item.id if serializable_item.respond_to? :id
-        hashed = { id: id }
-        result[root_key] << hashed
-        hashed.merge! serializer_class.new(serializable_item, { result: result, identity_map: identity_map, type_key_resolver: type_key_resolver }).includes(*relation_includes.to_a).to_hash
-      end
-
-      add_sideload_data_from_identity_map
-
+      result[root_key] = create_root_result_and_cache_relationships
       result[:meta] = meta_data.merge(includes_meta_data)
+      result[:linked] = sideload_data_from_identity_map
 
       result
     end
@@ -98,6 +88,30 @@ module Hat
       { includable: includable.to_s, included: relation_includes.to_s }
     end
 
+    def assert_id_present(serializable_item)
+      raise "serializable items must have an id attribute" unless serializable_item.respond_to?(:id)
+    end
+
+    def create_root_result_and_cache_relationships
+
+      root_result = []
+
+      Array(serializable).each do |serializable_item|
+
+        assert_id_present(serializable_item)
+        serializer_class = serializer_class_for(serializable_item)
+
+        id = serializable_item.id
+        hashed = { id: id }
+
+        root_result << hashed
+        hashed.merge!(serializer_class.new(serializable_item, { result: result, identity_map: identity_map, type_key_resolver: type_key_resolver }).includes(*relation_includes.to_a).to_hash)
+      end
+
+      root_result
+
+    end
+
     def attribute_hash
 
       attribute_hash = {}
@@ -144,17 +158,7 @@ module Hat
 
       has_manys.each do |attr_name|
         has_many_relation = serializable.send(attr_name) || []
-
-        # if has_many_relation.respond_to?(:pluck)
-        #   ids = has_many_relation.pluck(:id)
-        # else
-        #   ids = has_many_relation.map(&:id)
-        # end
-
-        ids = has_many_relation.map(&:id)
-
-        has_many_hash[attr_name] = ids
-
+        has_many_hash[attr_name] = has_many_relation.map(&:id)
       end
 
       has_many_hash
@@ -207,12 +211,10 @@ module Hat
       identity_map.put(type_key, related.id, hashed)
     end
 
-    def add_sideload_data_from_identity_map
-
-      linked = result[:linked] = {}
-
-      identity_map.to_hash.each do |key, type_map|
-        linked[key] = type_map.values
+    def sideload_data_from_identity_map
+      identity_map.to_hash.inject({}) do |sideload_data, (key, type_map)|
+        sideload_data[key] = type_map.values
+        sideload_data
       end
     end
 
