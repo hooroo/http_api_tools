@@ -4,6 +4,7 @@ require 'active_support/core_ext/string/inflections'
 require 'hat/relation_includes'
 require 'hat/identity_map'
 require 'hat/type_key_resolver'
+require 'hat/relation_sideloader'
 require 'hat/json_serializer_dsl'
 
 module Hat
@@ -33,7 +34,7 @@ module Hat
       end
 
       result[:meta] = meta_data.merge(includes_meta_data)
-      result[:linked] = extract_sideload_data_from_identity_map
+      result[:linked] = relation_sideloader.as_json
 
       result
     end
@@ -56,6 +57,12 @@ module Hat
       self
     end
 
+    def as_sideloaded_hash
+      hash = attribute_hash.merge(links: has_one_hash.merge(has_many_hash))
+      relation_sideloader.sideload_relations
+      hash
+    end
+
     protected
 
     attr_accessor :identity_map
@@ -76,17 +83,10 @@ module Hat
       self.class._includable
     end
 
-    def to_hash
-      hash = attribute_hash.merge(links: has_one_hash.merge(has_many_hash))
-      sideload_has_ones
-      sideload_has_manys
-      hash
-    end
-
     private
 
     attr_writer :relation_includes
-    attr_reader :type_key_resolver
+    attr_reader :type_key_resolver, :relation_sideloader
     attr_accessor :serializer_map, :meta_data
 
     def includes_meta_data
@@ -102,7 +102,7 @@ module Hat
 
       result[root_key] << hashed
 
-      hashed.merge!(serializer.includes(*relation_includes.to_a).to_hash)
+      hashed.merge!(serializer.includes(*relation_includes.to_a).as_sideloaded_hash)
 
     end
 
@@ -159,52 +159,16 @@ module Hat
 
     end
 
-    def sideload_has_ones
-
-      has_ones.each do |attr_name|
-
-        if related_item = get_relation(attr_name)
-          type_key = type_key_for(related_item)
-          sideload_item(related_item, attr_name, type_key) unless identity_map.get(type_key, related_item.id)
-        end
-
-      end
-    end
-
-    def sideload_has_manys
-
-      has_manys.each do |attr_name|
-
-        if related_items = get_relation(attr_name)
-
-          type_key = nil
-
-          related_items.each do |related_item|
-            type_key ||= type_key_for(related_item)
-            sideload_item(related_item, attr_name, type_key) unless identity_map.get(type_key, related_item.id)
-          end
-
-        end
-      end
-    end
-
-    def get_relation(attr_name)
-      serializable.send(attr_name) if relation_includes.includes_relation?(attr_name)
-    end
-
-    def sideload_item(related, attr_name, type_key)
-      serializer_class = serializer_class_for(related)
-      includes = relation_includes.nested_includes_for(attr_name) || []
-      hashed = serializer_class.new(related, { result: result, identity_map: identity_map, type_key_resolver: type_key_resolver }).includes(*includes).to_hash
-
-      identity_map.put(type_key, related.id, hashed)
-    end
-
-    def extract_sideload_data_from_identity_map
-      identity_map.to_hash.inject({}) do |sideload_data, (key, type_map)|
-        sideload_data[key] = type_map.values
-        sideload_data
-      end
+    def relation_sideloader
+      @relation_sideloader ||= RelationSideloader.new(
+        serializable: serializable,
+        has_ones: has_ones,
+        has_manys: has_manys,
+        relation_includes: relation_includes,
+        identity_map: identity_map,
+        type_key_resolver: type_key_resolver,
+        result: result
+      )
     end
 
     def serializer_for(serializable_item)
@@ -219,8 +183,8 @@ module Hat
 
     end
 
-    def serializer_class_for(model)
-      "#{model.class.name}Serializer".constantize
+    def serializer_class_for(serializable)
+      "#{serializable.class.name}Serializer".constantize
     end
 
     def assert_id_present(serializable_item)
@@ -229,10 +193,6 @@ module Hat
 
     def root_key
       @_root_key ||= self.class.name.split("::").last.underscore.gsub('_serializer', '').pluralize.to_sym
-    end
-
-    def type_key_for(related)
-      type_key_resolver.for_class(related.class)
     end
 
     #----Module Inclusion
