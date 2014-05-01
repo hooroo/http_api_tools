@@ -4,7 +4,6 @@ Provides fast serialization/deserialization of models with simple model attribut
 
 Adheres to the ID Based Json API Spec - http://jsonapi.org/format/#id-based-json-api for serialization
 
-
 ## Installation
 
 Add this line to your application's Gemfile:
@@ -357,6 +356,8 @@ spec for serialization that dumps some timings and creates a profile report in `
 
 Until we have a more robust way of tracking performance over time, please do some before and after tests against this when you make changes. Even small things have been found to introduce big performance issues.
 
+## Continuous Integration
+Currently running on Travis CI - https://travis-ci.org/hooroo/http-api-tools
 
 ## To Do
 * Support polymorhic relationships
