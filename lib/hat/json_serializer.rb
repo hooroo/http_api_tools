@@ -25,15 +25,10 @@ module Hat
 
     def as_json(*args)
 
-      result[root_key] = [] #create_root_result_and_cache_relationships
+      result[root_key] = []
 
       Array(serializable).each do |serializable_item|
-
-        assert_id_present(serializable_item)
-
-        hashed = { id: serializable_item.id }
-        result[root_key] << hashed
-        hashed.merge!(serialize_item_and_cache_relationships(serializable_item))
+        serialize_item_and_cache_relationships(serializable_item)
       end
 
       result[:meta] = meta_data.merge(includes_meta_data)
@@ -102,34 +97,16 @@ module Hat
       raise "serializable items must have an id attribute" unless serializable_item.respond_to?(:id)
     end
 
-    # def create_root_result_and_cache_relationships
-
-    #   root_result = []
-
-    #   Array(serializable).each do |serializable_item|
-
-    #     assert_id_present(serializable_item)
-
-    #     hashed = { id: serializable_item.id }
-    #     root_result << hashed
-    #     hashed.merge!(serialize_item(serializable_item))
-    #   end
-
-    #   root_result
-
-    # end
-
     def serialize_item_and_cache_relationships(serializable_item)
 
-      serializer_class = serializer_class_for(serializable_item)
+      assert_id_present(serializable_item)
 
-      serializer = serializer_class.new(serializable_item, {
-        result: result,
-        identity_map: identity_map,
-        type_key_resolver: type_key_resolver
-      })
+      serializer = serializer_for(serializable_item)
+      hashed = { id: serializable_item.id }
 
-      serializer.includes(*relation_includes.to_a).to_hash
+      result[root_key] << hashed
+
+      hashed.merge!(serializer.includes(*relation_includes.to_a).to_hash)
 
     end
 
@@ -237,6 +214,18 @@ module Hat
         sideload_data[key] = type_map.values
         sideload_data
       end
+    end
+
+    def serializer_for(serializable_item)
+
+      serializer_class = serializer_class_for(serializable_item)
+
+      serializer_class.new(serializable_item, {
+        result: result,
+        identity_map: identity_map,
+        type_key_resolver: type_key_resolver
+      })
+
     end
 
     def serializer_class_for(model)
