@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 require "active_support/core_ext/class/attribute"
-require "hat/model/type_coercions"
+require "hat/transformers/registry"
 
 #Mix in to PORO to get basic attribute definition with type coercion and defaults.
 #class MyClass
@@ -15,8 +15,6 @@ require "hat/model/type_coercions"
 module Hat
   module Model
     module Attributes
-
-      include TypeCoercions
 
       def initialize(attrs = {})
 
@@ -58,7 +56,7 @@ module Hat
       def set_raw_value(attr_name, raw_value, apply_if_read_only = false)
 
         attr_def = attributes[attr_name]
-        value = coerced_value(raw_value, attr_def[:type])
+        value = transformed_value(attr_def[:type], raw_value)
 
         if attr_def[:read_only] && apply_if_read_only
           instance_variable_set("@#{attr_name}", value)
@@ -67,12 +65,16 @@ module Hat
         end
       end
 
-      def coerced_value(raw_value, coercion_type)
-        if coercion_type
-          value = self.send("to_#{coercion_type}", raw_value)
+      def transformed_value(type, raw_value)
+        if type
+          transformer_registry.from_raw(type, raw_value)
         else
           raw_value
         end
+      end
+
+      def transformer_registry
+        Transformers::Registry.instance
       end
 
       #make sure we don't pass references to the same default object to each instance. Copy/dup where appropriate

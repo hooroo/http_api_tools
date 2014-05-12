@@ -27,7 +27,7 @@ module Hat
           expect(test_model.tags).to eq ["Musician", "Guitarist"]
         end
 
-        it "coerces values when type is defined" do
+        it "transforms date value when date_time type is defined" do
           date_time_string = "2013-01-01T12:00:00.000Z"
           test_model = test_model_class.new(dob: date_time_string)
           expect(test_model.dob).to eq DateTime.parse(date_time_string)
