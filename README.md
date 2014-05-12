@@ -298,7 +298,7 @@ end
 ```
 
 ### Models
-Client models have some basic requirements that are catered to such as attribute definition, default values and type coercion.
+Client models have some basic requirements that are catered to such as attribute definition, default values and type tranforms.
 
 For example:
 
@@ -318,10 +318,46 @@ class User
 end
 ```
 
-This will define a User class with attr_accessors for all attributes defined. The initialize method will accept a hash of values which will be passed through type coercions when configured and have defaults applied when no value is passed in for a key.
+This will define a User class with attr_accessors for all attributes defined. The initialize method will accept a hash of values which will be passed through type transformers when configured and have defaults applied when no value is passed in for a key.
 
-At this stage type coercion is limited and there's no way to define types outside the gem. This will change when the need arises or we get around to it. For now if a type coercion makes sense to add for all apps, it should be added to `type_coercions.rb`.
-See: https://github.com/hooroo/hooroo-api-tools/issues/5
+Currently there is a single registered type transform for date_time transforms. This expects an iso8601 date format as a string which will be transformed into a ruby DateTime.
+
+#### Registering custom type transformers.
+
+Type transformers expect the following two-way interface:
+
+```ruby
+class MoneyTranformer
+
+  def self.from_raw(value)
+    Money.new(value)
+  end
+
+  def self.to_raw(money)
+    money.to_s
+  end
+
+end
+```
+
+Transformers should then be registered against a type key:
+
+
+```ruby
+Hat::Transformers::Registry.instance.register(:money, MoneyTransformer)
+```
+
+Now you can define an attribute as a `money` type:
+
+```ruby
+class Account
+
+  include Hat::Model::Attributes
+
+  attribute :balance: type: :money
+
+end
+```
 
 #### Read only attributes
 Sometimes it's useful to define a field as readonly. The intent being that we prevent changing an attribute value that shouldn't be changed or prevent a value from being serialized and sent in the payload that the server won't accept.
