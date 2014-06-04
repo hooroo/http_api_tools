@@ -21,7 +21,7 @@ module Hat
         attrs = attrs.with_indifferent_access
 
         attributes.each do |attr_name, attr_options|
-          raw_value = attrs[attr_name] || default_for(attr_options)
+          raw_value = attrs[attr_name] == nil ? default_for(attr_options) : attrs[attr_name]
           set_raw_value(attr_name, raw_value, true) unless raw_value == nil
         end
 

@@ -16,6 +16,7 @@ module Hat
           attribute :tags, default: []
           attribute :qualifications, default: {thing: 1}
           attribute :source, default: 'internal'
+          attribute :active
         end
       end
 
@@ -64,6 +65,11 @@ module Hat
           end
           expect{ test_model_with_invalid_default.new }.to raise_error
 
+        end
+
+        it 'sets a false value as false' do
+           test_model = test_model_class.new(active: false)
+           expect(test_model.active).to eq false
         end
 
         context "when given read_only as an option" do
