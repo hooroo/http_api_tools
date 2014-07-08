@@ -1,7 +1,9 @@
 # encoding: utf-8
 
 require "active_support/core_ext/class/attribute"
+require 'active_support/core_ext/string/inflections'
 require "hat/transformers/registry"
+require "hat/model/has_many_array"
 
 #Mix in to PORO to get basic attribute definition with type coercion and defaults.
 #class MyClass
@@ -49,6 +51,10 @@ module Hat
 
       def attributes
         self.class._attributes
+      end
+
+      def has_many_changed(has_many_name)
+        send("#{has_many_name.to_s.singularize}_ids=", send(has_many_name).map(&:id))
       end
 
       private
@@ -119,8 +125,45 @@ module Hat
           end
         end
 
-      end
+        def belongs_to(name, options = {})
 
+          id_attr_name = "#{name}_id"
+          id_setter_method_name = "#{id_attr_name}="
+
+          send(:attr_reader, name)
+          send(:attr_reader, id_attr_name)
+
+          define_method("#{name}=") do |value|
+            instance_variable_set("@#{name}", value)
+            id_value =  value.nil? ? nil : value.id
+            send(id_setter_method_name, id_value)
+          end
+
+          define_method(id_setter_method_name) do |value|
+            instance_variable_set("@#{id_attr_name}", value)
+          end
+        end
+
+        def has_many(name, options = {})
+
+          ids_attr_name = "#{name.to_s.singularize}_ids"
+          id_setter_method_name = "#{ids_attr_name}="
+
+          send(:attr_reader, name)
+          send(:attr_reader, ids_attr_name)
+
+          define_method("#{name}=") do |value|
+            instance_variable_set("@#{name}", HasManyArray.new(value, self, name))
+            has_many_changed(name)
+          end
+
+          define_method(id_setter_method_name) do |value|
+            instance_variable_set("@#{ids_attr_name}", value)
+          end
+
+        end
+
+      end
     end
   end
 end

@@ -14,9 +14,11 @@ module Hat
           attribute :name
           attribute :dob, type: :date_time
           attribute :tags, default: []
-          attribute :qualifications, default: {thing: 1}
+          attribute :qualifications, default: { thing: 1 }
           attribute :source, default: 'internal'
           attribute :active
+          belongs_to :parent
+          has_many :children
         end
       end
 
@@ -39,7 +41,7 @@ module Hat
         end
 
         it "sets default hash if provided" do
-          expect(test_model_class.new.qualifications).to eq({thing: 1})
+          expect(test_model_class.new.qualifications).to eq(thing: 1)
         end
 
         it "sets default primitive if provided" do
@@ -110,6 +112,50 @@ module Hat
           end
 
         end
+      end
+
+      describe 'belongs_to' do
+
+        let(:test_model) { test_model_class.new }
+        let(:parent) { OpenStruct.new(id: 1) }
+
+        it 'creates accessor for attribute name' do
+          test_model.parent = parent
+          expect(test_model.parent).to eq parent
+        end
+
+        it 'creates accessor for attribute_id' do
+          test_model.parent_id = 1
+          expect(test_model.parent_id).to eq 1
+        end
+
+        it 'updates the id attribute when the belongs_to attribute is updated' do
+          test_model.parent = parent
+          expect(test_model.parent_id).to eq 1
+        end
+
+      end
+
+      describe 'has_many' do
+
+        let(:test_model) { test_model_class.new }
+        let(:child) { OpenStruct.new(id: 1) }
+
+        it 'creates accessor for attribute name' do
+          test_model.children = [child]
+          expect(test_model.children).to eq [child]
+        end
+
+        it 'creates accessor for attributes_id' do
+          test_model.child_ids = [1]
+          expect(test_model.child_ids).to eq [1]
+        end
+
+        it 'updates the ids attribute when the has_many attribute is updated' do
+          test_model.children = [OpenStruct.new(id: 3), OpenStruct.new(id: 4)]
+          expect(test_model.child_ids).to eq [3, 4]
+        end
+
       end
 
       describe "#errors" do

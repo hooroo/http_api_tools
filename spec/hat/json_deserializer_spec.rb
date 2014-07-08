@@ -73,8 +73,16 @@ module Hat
         expect(company.suppliers).to eql []
       end
 
+      it "has_many relationships without sideloaded data have relation_ids attribute set to the ids of the relationship" do
+        expect(company.supplier_ids).to eql [30]
+      end
+
       it "has_one relationships without sideloaded data are set to nil" do
         expect(company.parent_company).to eql nil
+      end
+
+      it "has_one relationships without sideloaded data sets the relation_id attribute set to the id" do
+        expect(company.parent_company_id).to eql 40
       end
 
     end

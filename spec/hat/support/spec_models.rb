@@ -13,8 +13,8 @@ class Person
   attribute :last_name
   attribute :dob
   attribute :email
-  attribute :employer
-  attribute :skills
+  belongs_to :employer
+  has_many :skills
 
   def employer_id
     employer.try(:id)
@@ -36,11 +36,12 @@ class Company
 
   attribute :id
   attribute :name
-  attribute :employees
-  attribute :suppliers
-  attribute :parent_company
-  attribute :address
   attribute :brand, read_only: true
+  has_many :employees
+  has_many :suppliers
+  belongs_to :parent_company
+  belongs_to :address
+
 
   #Act like active record for reflectively interogating type info
   def self.reflections
@@ -61,7 +62,7 @@ class Skill
   attribute :id
   attribute :name
   attribute :description
-  attribute :person
+  belongs_to :person
 
   def person_id
     person.try(:id)
