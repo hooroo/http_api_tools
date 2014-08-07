@@ -1,5 +1,6 @@
 module Hat
-  module JsonSerializerDsl
+  module Sideloading
+    module JsonSerializerDsl
 
       def has_ones
         self._relationships[:has_ones]
@@ -26,4 +27,5 @@ module Hat
       end
 
     end
+  end
 end

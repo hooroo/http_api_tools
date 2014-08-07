@@ -1,10 +1,10 @@
 # encoding: utf-8
 
-require 'hat/json_deserializer_mapping'
+require 'hat/sideloading/json_deserializer_mapping'
 
 class CompanyDeserializerMapping
 
-  include Hat::JsonDeserializerMapping
+  include Hat::Sideloading::JsonDeserializerMapping
 
   map :employees, Person
 

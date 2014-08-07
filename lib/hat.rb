@@ -1,6 +1,6 @@
 require "hat/version"
-require 'hat/json_serializer'
-require 'hat/json_deserializer'
+require 'hat/sideloading/json_serializer'
+require 'hat/sideloading/json_deserializer'
 require 'hat/model'
 require 'hat/relation_includes'
 

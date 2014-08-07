@@ -2,8 +2,8 @@
 
 require "active_support/core_ext/class/attribute"
 require 'active_support/core_ext/string/inflections'
-require "hat/transformers/registry"
-require "hat/model/has_many_array"
+require_relative "transformers/registry"
+require_relative "has_many_array"
 
 #Mix in to PORO to get basic attribute definition with type coercion and defaults.
 #class MyClass
@@ -54,7 +54,7 @@ module Hat
       end
 
       def has_many_changed(has_many_name)
-        send("#{has_many_name.to_s.singularize}_ids=", send(has_many_name).map(&:id))
+        send("#{has_many_name.to_s.singularize}_ids=", send(has_many_name).map(&:id).compact)
       end
 
       private

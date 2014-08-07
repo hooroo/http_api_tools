@@ -1,8 +1,8 @@
-require 'hat/json_serializer'
+require 'hat/sideloading/json_serializer'
 
 class PersonSerializer
 
-  include Hat::JsonSerializer
+  include Hat::Sideloading::JsonSerializer
 
   attributes :id, :first_name, :last_name, :full_name, :dob, :email
   has_one :employer
@@ -16,7 +16,7 @@ end
 
 class CompanySerializer
 
-  include Hat::JsonSerializer
+  include Hat::Sideloading::JsonSerializer
 
   attributes :id, :name
   has_many :employees
@@ -26,7 +26,7 @@ end
 
 class SkillSerializer
 
-  include Hat::JsonSerializer
+  include Hat::Sideloading::JsonSerializer
 
   attributes :id, :name, :description
   has_one :person

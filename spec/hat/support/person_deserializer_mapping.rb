@@ -1,8 +1,8 @@
-require 'hat/json_deserializer_mapping'
+require 'hat/sideloading/json_deserializer_mapping'
 
 class PersonDeserializerMapping
 
-  include Hat::JsonDeserializerMapping
+  include Hat::Sideloading::JsonDeserializerMapping
 
   map :employer, Company
 
