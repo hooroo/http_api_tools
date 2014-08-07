@@ -2,14 +2,14 @@ module Hat
   module Sideloading
     class RelationSideloader
 
-      def initialize(args = {})
-        @serializable = args[:serializable]
-        @has_ones = args[:has_ones]
-        @has_manys = args[:has_manys]
-        @relation_includes = args[:relation_includes]
-        @result = args[:result]
-        @identity_map = args[:identity_map]
-        @type_key_resolver = args[:type_key_resolver]
+      def initialize(opts = {})
+        @serializable = opts[:serializable]
+        @has_ones = opts[:has_ones]
+        @has_manys = opts[:has_manys]
+        @relation_includes = opts[:relation_includes]
+        @result = opts[:result]
+        @identity_map = opts[:identity_map]
+        @type_key_resolver = opts[:type_key_resolver]
       end
 
       def sideload_relations
@@ -75,7 +75,7 @@ module Hat
       end
 
       def serializer_class_for(serializable)
-        "#{serializable.class.name}Serializer".constantize
+        Hat::SerializerRegistry.instance.get(:sideloading, serializable.class)
       end
 
 

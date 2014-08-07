@@ -16,6 +16,37 @@ module Hat
       @relation_includes = attrs[:relation_includes] || RelationIncludes.new
     end
 
+    def as_json(*args)
+
+      result[root_key] = []
+
+      Array(serializable).each do |serializable_item|
+        result[root_key] << attribute_hash.merge(has_one_hash).merge(has_many_hash)
+      end
+
+      result[:meta] = meta_data.merge(includes_meta_data)
+
+      result
+    end
+
+
+    def attribute_hash
+
+      attribute_hash = {}
+
+      attributes.each do |attr_name|
+        if self.respond_to?(attr_name)
+          attribute_hash[attr_name] = self.send(attr_name)
+        else
+          attribute_hash[attr_name] = serializable.send(attr_name)
+        end
+      end
+
+      attribute_hash
+
+    end
+
+
     def to_json(*args)
       JSON.fast_generate(as_json)
     end
@@ -66,6 +97,10 @@ module Hat
 
     def includes_meta_data
       { includable: includable.to_s, included: relation_includes.to_s }
+    end
+
+    def serializer_class_for(serializable)
+      Hat::SerializerRegistry.instance.get(:sideloading, serializable.class)
     end
 
   end

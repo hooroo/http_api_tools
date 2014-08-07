@@ -58,7 +58,8 @@ module Hat
 
     def append_has_many_includes(target_model_class, base_includes, expanded_includes)
 
-      serializer = "#{target_model_class.name}Serializer".constantize
+      #TODO - remove hardcoding to sideloading serializer
+      serializer = Hat::SerializerRegistry.instance.get(:sideloading, target_model_class)
 
       serializer.has_manys.each do |has_many_attr|
         expanded_includes << has_many_attr unless RelationIncludes.new(*base_includes).find(has_many_attr)

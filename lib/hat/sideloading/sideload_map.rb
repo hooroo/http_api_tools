@@ -7,7 +7,7 @@ module Hat
     class SideloadMap
 
       def initialize(json, root_key)
-        # super()
+
         @root_key = root_key
         @identity_map = IdentityMap.new
 
