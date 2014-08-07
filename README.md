@@ -1,3 +1,7 @@
+## NOTE: Current WIP branch with a bunch of refactoring towards adding a nested serializer.
+
+-------------------------------------------------------------------------------------------
+
 # Http API Tools
 
 Provides fast serialization/deserialization of models with simple model attribute definition in client apps.
