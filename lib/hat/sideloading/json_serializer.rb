@@ -1,29 +1,22 @@
-require "active_support/core_ext/class/attribute"
-require "active_support/json"
-require 'active_support/core_ext/string/inflections'
-require_relative '../relation_includes'
-require_relative '../identity_map'
-require_relative '../type_key_resolver'
+require_relative '../base_json_serializer'
 require_relative 'relation_sideloader'
 require_relative 'json_serializer_dsl'
+
 
 module Hat
   module Sideloading
     module JsonSerializer
 
-      attr_reader :serializable, :relation_includes, :result, :attribute_mappings, :has_one_mappings, :has_many_mappings, :cached
+      include Hat::BaseJsonSerializer
+
+      attr_reader :relation_includes, :result, :attribute_mappings, :has_one_mappings, :has_many_mappings, :cached
 
       def initialize(serializable, attrs = {})
-        @serializable = serializable
+        super
         @result = attrs[:result] || {}
-        @relation_includes = attrs[:relation_includes] || RelationIncludes.new
         @identity_map = attrs[:identity_map] || IdentityMap.new
         @type_key_resolver = attrs[:type_key_resolver] || TypeKeyResolver.new
         @meta_data = { type: root_key.to_s.singularize, root_key: root_key.to_s }
-      end
-
-      def to_json(*args)
-        JSON.fast_generate(as_json)
       end
 
       def as_json(*args)
@@ -38,24 +31,6 @@ module Hat
         result[:linked] = relation_sideloader.as_json
 
         result
-      end
-
-      def includes(*includes)
-
-        if includable
-          allowable_includes_to_add = RelationIncludes.new(*includes) & includable
-        else
-          allowable_includes_to_add = includes
-        end
-
-        relation_includes.include(allowable_includes_to_add)
-
-        self
-      end
-
-      def meta(data)
-        meta_data.merge!(data)
-        self
       end
 
       def as_sideloaded_hash
@@ -86,13 +61,7 @@ module Hat
 
       private
 
-      attr_writer :relation_includes
-      attr_reader :type_key_resolver, :relation_sideloader
-      attr_accessor :serializer_map, :meta_data
-
-      def includes_meta_data
-        { includable: includable.to_s, included: relation_includes.to_s }
-      end
+      attr_reader :relation_sideloader
 
       def serialize_item_and_cache_relationships(serializable_item)
 
