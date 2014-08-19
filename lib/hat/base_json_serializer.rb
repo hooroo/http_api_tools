@@ -9,24 +9,13 @@ require_relative 'type_key_resolver'
 module Hat
   module BaseJsonSerializer
 
-    attr_reader :serializable, :relation_includes
+    attr_reader :serializable, :relation_includes, :result, :meta_data
 
     def initialize(serializable, attrs = {})
       @serializable = serializable
       @relation_includes = attrs[:relation_includes] || RelationIncludes.new
-    end
-
-    def as_json(*args)
-
-      result[root_key] = []
-
-      Array(serializable).each do |serializable_item|
-        result[root_key] << attribute_hash.merge(has_one_hash).merge(has_many_hash)
-      end
-
-      result[:meta] = meta_data.merge(includes_meta_data)
-
-      result
+      @result = attrs[:result] || {}
+      @meta_data = { type: root_key.to_s.singularize, root_key: root_key.to_s }
     end
 
 
@@ -95,12 +84,19 @@ module Hat
     attr_reader :type_key_resolver
     attr_accessor :serializer_map, :meta_data
 
-    def includes_meta_data
-      { includable: includable.to_s, included: relation_includes.to_s }
+    def root_key
+      @_root_key ||= self.class._serializes.name.split("::").last.underscore.pluralize.to_sym
     end
 
-    def serializer_class_for(serializable)
-      Hat::SerializerRegistry.instance.get(:sideloading, serializable.class)
+    def includes_meta_data
+      {
+        includable: includable.to_s.blank? ? '*' : includable.to_s,
+        included: relation_includes.to_s
+      }
+    end
+
+    def assert_id_present(serializable_item)
+      raise "serializable items must have an id attribute" unless serializable_item.respond_to?(:id)
     end
 
   end

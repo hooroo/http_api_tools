@@ -12,10 +12,8 @@ module Hat
 
       def initialize(serializable, attrs = {})
         super
-        @result = attrs[:result] || {}
         @identity_map = attrs[:identity_map] || IdentityMap.new
         @type_key_resolver = attrs[:type_key_resolver] || TypeKeyResolver.new
-        @meta_data = { type: root_key.to_s.singularize, root_key: root_key.to_s }
       end
 
       def as_json(*args)
@@ -34,40 +32,40 @@ module Hat
 
       def has_one_hash
 
-      has_one_hash = {}
+        has_one_hash = {}
 
-      has_ones.each do |attr_name|
+        has_ones.each do |attr_name|
 
-        id_attr = "#{attr_name}_id"
+          id_attr = "#{attr_name}_id"
 
-        #Use id attr if possible as it's cheaper than referencing the object
-        if serializable.respond_to?(id_attr)
-          related_id = serializable.send(id_attr)
-        else
-          related_id = serializable.send(attr_name).try(:id)
+          #Use id attr if possible as it's cheaper than referencing the object
+          if serializable.respond_to?(id_attr)
+            related_id = serializable.send(id_attr)
+          else
+            related_id = serializable.send(attr_name).try(:id)
+          end
+
+          has_one_hash[attr_name] = related_id
+
         end
 
-        has_one_hash[attr_name] = related_id
+        has_one_hash
 
       end
 
-      has_one_hash
 
-    end
+      def has_many_hash
 
+        has_many_hash = {}
 
-    def has_many_hash
+        has_manys.each do |attr_name|
+          has_many_relation = serializable.send(attr_name) || []
+          has_many_hash[attr_name] = has_many_relation.map(&:id)
+        end
 
-      has_many_hash = {}
+        has_many_hash
 
-      has_manys.each do |attr_name|
-        has_many_relation = serializable.send(attr_name) || []
-        has_many_hash[attr_name] = has_many_relation.map(&:id)
       end
-
-      has_many_hash
-
-    end
 
       def as_sideloaded_hash
         hash = attribute_hash.merge(links: has_one_hash.merge(has_many_hash))
@@ -189,18 +187,12 @@ module Hat
 
       end
 
-      def assert_id_present(serializable_item)
-        raise "serializable items must have an id attribute" unless serializable_item.respond_to?(:id)
+      def serializer_class_for(serializable)
+        Hat::SerializerRegistry.instance.get(:sideloading, serializable.class)
       end
-
-      def root_key
-        @_root_key ||= self.class.name.split("::").last.underscore.gsub('_serializer', '').pluralize.to_sym
-      end
-
-
 
       #----Module Inclusion
-
+      #-- TODO figure out how to pull this up a level to DRY things up
       def self.included(base)
         base.class_attribute :_attributes
         base.class_attribute :_relationships

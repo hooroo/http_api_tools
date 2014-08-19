@@ -20,7 +20,7 @@ module Hat
     private
 
     def registry
-      @registry ||= { sideloading: {}, nested: {} }
+      @registry ||= { sideloading: {}, nesting: {} }
     end
 
   end
