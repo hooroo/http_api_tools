@@ -32,7 +32,7 @@ module Hat
 
         has_ones.each do |attr_name|
 
-          if related_item = get_relation(attr_name)
+          if related_item = relation_for(attr_name)
             type_key = type_key_for(related_item)
             sideload_item(related_item, attr_name, type_key) unless identity_map.get(type_key, related_item.id)
           end
@@ -44,7 +44,7 @@ module Hat
 
         has_manys.each do |attr_name|
 
-          if related_items = get_relation(attr_name)
+          if related_items = relation_for(attr_name)
 
             type_key = nil
 
@@ -58,7 +58,7 @@ module Hat
       end
 
 
-      def get_relation(attr_name)
+      def relation_for(attr_name)
         serializable.send(attr_name) if relation_includes.includes_relation?(attr_name)
       end
 
