@@ -29,20 +29,19 @@ module Hat
       private
 
       def has_one_hash
+        has_ones.inject({}) { |has_one_hash, attr_name| serialize_has_one_relation(has_one_hash, attr_name) }
+      end
 
-        has_one_hash = {}
+      def serialize_has_one_relation(has_one_hash, attr_name)
 
-        has_ones.each do |attr_name|
+        id_attr = "#{attr_name}_id"
 
-          id_attr = "#{attr_name}_id"
-
-          if related_item = get_relation(attr_name)
-            has_one_hash[attr_name] = serialize_nested_item_with_includes(related_item, includes_for_attr(attr_name))
-          elsif serializable.respond_to?(id_attr)
-            has_one_hash[id_attr] = serializable.send(id_attr)
-          else
-            has_one_hash[id_attr] = serializable.send(attr_name).try(:id)
-          end
+        if related_item = get_relation(attr_name)
+          has_one_hash[attr_name] = serialize_nested_item_with_includes(related_item, includes_for_attr(attr_name))
+        elsif serializable.respond_to?(id_attr)
+          has_one_hash[id_attr] = serializable.send(id_attr)
+        else
+          has_one_hash[id_attr] = serializable.send(attr_name).try(:id)
         end
 
         has_one_hash
@@ -51,18 +50,17 @@ module Hat
 
 
       def has_many_hash
+        has_manys.inject({}) { |has_many_hash, attr_name| serialize_has_many_relations(has_many_hash, attr_name) }
+      end
 
-        has_many_hash = {}
-
-        has_manys.each do |attr_name|
-          if related_items = get_relation(attr_name)
-            has_many_hash[attr_name] = related_items.map do |related_item|
-              serialize_nested_item_with_includes(related_item, includes_for_attr(attr_name))
-            end
-          else
-            has_many_relation = serializable.send(attr_name) || []
-            has_many_hash["#{attr_name.to_s.singularize}_ids"] = has_many_relation.map(&:id)
+      def serialize_has_many_relations(has_many_hash, attr_name)
+        if related_items = get_relation(attr_name)
+          has_many_hash[attr_name] = related_items.map do |related_item|
+            serialize_nested_item_with_includes(related_item, includes_for_attr(attr_name))
           end
+        else
+          has_many_relation = serializable.send(attr_name) || []
+          has_many_hash["#{attr_name.to_s.singularize}_ids"] = has_many_relation.map(&:id)
         end
 
         has_many_hash
