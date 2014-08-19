@@ -30,43 +30,6 @@ module Hat
         result
       end
 
-      def has_one_hash
-
-        has_one_hash = {}
-
-        has_ones.each do |attr_name|
-
-          id_attr = "#{attr_name}_id"
-
-          #Use id attr if possible as it's cheaper than referencing the object
-          if serializable.respond_to?(id_attr)
-            related_id = serializable.send(id_attr)
-          else
-            related_id = serializable.send(attr_name).try(:id)
-          end
-
-          has_one_hash[attr_name] = related_id
-
-        end
-
-        has_one_hash
-
-      end
-
-
-      def has_many_hash
-
-        has_many_hash = {}
-
-        has_manys.each do |attr_name|
-          has_many_relation = serializable.send(attr_name) || []
-          has_many_hash[attr_name] = has_many_relation.map(&:id)
-        end
-
-        has_many_hash
-
-      end
-
       def as_sideloaded_hash
         hash = attribute_hash.merge(links: has_one_hash.merge(has_many_hash))
         relation_sideloader.sideload_relations
