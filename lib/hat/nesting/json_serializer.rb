@@ -26,12 +26,7 @@ module Hat
         attribute_hash.merge(has_one_hash).merge(has_many_hash)
       end
 
-
       private
-
-      def serialize_item(serializable_item)
-        serializer_for(serializable_item).serialize
-      end
 
       def has_one_hash
 
@@ -74,9 +69,6 @@ module Hat
 
       end
 
-
-      # private
-
       def get_relation(attr_name)
         serializable.send(attr_name) if relation_includes.includes_relation?(attr_name)
       end
@@ -88,7 +80,7 @@ module Hat
         serializer = serializer_for(serializable_item)
         hashed = { id: serializable_item.id }
 
-        hashed.merge!(serializer.includes(*includes).serialize)
+        hashed.merge(serializer.includes(*includes).serialize)
 
       end
 
@@ -98,9 +90,7 @@ module Hat
 
       def serializer_for(serializable_item)
 
-        serializer_class = serializer_class_for(serializable_item)
-
-        serializer_class.new(serializable_item, {
+        serializer_class_for(serializable_item).new(serializable_item, {
           result: {}
         })
 

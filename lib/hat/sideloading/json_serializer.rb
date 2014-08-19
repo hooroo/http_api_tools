@@ -110,22 +110,6 @@ module Hat
 
       end
 
-      def attribute_hash
-
-        attribute_hash = {}
-
-        attributes.each do |attr_name|
-          if self.respond_to?(attr_name)
-            attribute_hash[attr_name] = self.send(attr_name)
-          else
-            attribute_hash[attr_name] = serializable.send(attr_name)
-          end
-        end
-
-        attribute_hash
-
-      end
-
       def has_one_hash
 
         has_one_hash = {}
