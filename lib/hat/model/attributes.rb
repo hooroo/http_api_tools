@@ -31,24 +31,6 @@ module Hat
 
       end
 
-      # This method is not really satisfactory. It doesn't take into account relationships and
-      # really only services a narrow use case. See - https://github.com/hooroo/hooroo-api-tools/issues/6
-      def as_json(opts = {})
-        json = {}
-
-        attributes = self.attributes
-
-        if opts[:exclude_read_only]
-          attributes = attributes.reject {|_, options| options[:read_only]}
-        end
-
-        attributes.each do |attr_name, options|
-          json[attr_name] = self.send(attr_name)
-        end
-
-        json.merge(errors: self.errors)
-      end
-
       def attributes
         self.class._attributes
       end

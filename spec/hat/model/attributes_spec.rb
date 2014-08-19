@@ -165,45 +165,6 @@ module Hat
         end
       end
 
-      describe "#as_json" do
-        let(:test_model_class) do
-          Class.new do
-            include Attributes
-            attribute :created_at, read_only: true
-            attribute :some_cool_value
-          end
-        end
-
-        context "when not provided options" do
-          it "includes all attributes in a hash" do
-            expect(test_model_class.new(some_cool_value: 'yeah cool!').as_json).to eq(
-              {
-                created_at: nil,
-                some_cool_value: 'yeah cool!',
-                errors: {}
-              }
-            )
-          end
-        end
-
-        context "when provided the exclude_read_only option" do
-          it "exclude all read only attributes in a hash" do
-            expect(test_model_class.new(some_cool_value: 'yeah cool!').as_json(exclude_read_only: true)).to eq(
-              {
-                some_cool_value: 'yeah cool!',
-                errors: {}
-              }
-            )
-          end
-
-          it 'does not remove the read_only attributes from the original attributes hash' do
-            test_model = test_model_class.new
-            test_model.as_json(exclude_read_only: true)
-            expect(test_model.attributes).to include(:created_at)
-          end
-        end
-      end
-
     end
   end
 end
