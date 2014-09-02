@@ -20,7 +20,9 @@ module Hat
       end
 
       def deserialize
-        json[root_key].map {|json_item| create_from_json_item(target_class_for_key(root_key), json_item) }
+        json[root_key].map do |json_item|
+          create_from_json_item(target_class_for_key(root_key), json_item)
+        end
       end
 
       private

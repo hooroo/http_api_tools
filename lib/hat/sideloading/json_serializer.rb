@@ -24,10 +24,7 @@ module Hat
           serialize_item_and_cache_relationships(serializable_item)
         end
 
-        result[:meta] = meta_data.merge(includes_meta_data)
-        result[:linked] = relation_sideloader.as_json
-
-        result
+        result.merge({ meta: meta_data.merge(includes_meta_data), linked: relation_sideloader.as_json })
       end
 
       def as_sideloaded_hash

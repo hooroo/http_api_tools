@@ -7,11 +7,9 @@ module Hat
       #----Module Inclusion
 
       def self.included(base)
-
         base.class_attribute :_mappings
         base._mappings = {}
         base.extend(Dsl)
-
       end
 
       module Dsl

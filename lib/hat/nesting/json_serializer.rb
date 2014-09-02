@@ -13,16 +13,11 @@ module Hat
       def as_json(*args)
 
         result[root_key] = Array(serializable).map do |serializable_item|
-          serializer = self.class.new(serializable_item, {
-            result: {}
-          })
-
+          serializer = self.class.new(serializable_item, { result: {} })
           serializer.includes(*relation_includes).serialize
         end
 
-        result[:meta] = meta_data.merge(includes_meta_data)
-
-        result
+        result.merge({ meta: meta_data.merge(includes_meta_data) })
       end
 
       def serialize

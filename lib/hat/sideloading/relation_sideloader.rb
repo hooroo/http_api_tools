@@ -31,12 +31,10 @@ module Hat
       def sideload_has_ones
 
         has_ones.each do |attr_name|
-
           if related_item = relation_for(attr_name)
             type_key = type_key_for(related_item)
             sideload_item(related_item, attr_name, type_key) unless identity_map.get(type_key, related_item.id)
           end
-
         end
       end
 
@@ -45,14 +43,11 @@ module Hat
         has_manys.each do |attr_name|
 
           if related_items = relation_for(attr_name)
-
             type_key = nil
-
             related_items.each do |related_item|
               type_key ||= type_key_for(related_item)
               sideload_item(related_item, attr_name, type_key) unless identity_map.get(type_key, related_item.id)
             end
-
           end
         end
       end
