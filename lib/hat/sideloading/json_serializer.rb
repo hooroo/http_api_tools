@@ -135,25 +135,8 @@ module Hat
         Hat::SerializerRegistry.instance.get(:sideloading, serializable.class)
       end
 
-      #----Module Inclusion
-      #-- TODO figure out how to pull this up a level to DRY things up
-      def self.included(base)
-        base.class_attribute :_attributes
-        base.class_attribute :_relationships
-        base.class_attribute :_includable
-        base.class_attribute :_serializes
-
-        base._attributes = []
-        base._relationships = { has_ones: [], has_manys: [] }
-
-        base.extend(JsonSerializerDsl)
-        base.extend(ClassMethods)
-      end
-
-      module ClassMethods
-        def type
-          :sideloading
-        end
+      def self.included(serializer_class)
+        JsonSerializerDsl.apply_to(serializer_class)
       end
 
     end
