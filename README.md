@@ -174,17 +174,17 @@ and splat into the serializer includes:
 
 and/or active record queries:
 
-`User.find(params[:id]).includes(*relation_includes.for_query_on(User))`
+`User.find(params[:id]).includes(*user_serializer.includes_for_query)`
 
-When providing the includes for an active record query, we actually want a deeper set of includes in order to account for the ids fetched for has_many relationships. If we simplify passed the same set of includes to the query as we pass to the serializer, we'd end up with n+1 problems when fetching the ids for the has_many relationships.
+When providing the includes for an active record query, we actually want a deeper set of includes in order to account for the ids fetched for has_many relationships. If we passed the same set of includes to the query as we pass to the serializer, we'd end up with n+1 queries when fetching the ids for the has_many relationships.
 
-Calling `relation_includes.for_query_on(User)` will figure out the minimum set of includes that are required based on:
+Calling `user_serializer.includes_for_query` will figure out the minimum set of includes that are required based on the following:
 
 * The models and their relationships
 * The relationships actually being serialized
 
 ##### Restricting what is included
-Once you open up what is sideload as a query string parameter you risk DOS attacks or poorly considered api calls that fetch too much. This can be countered by defining what is `includable` for each serializer what it's being used as the root serializer for a json response.
+Once you expose what is sideload as a query string parameter you risk exposing too much information or poorly considered api calls that fetch too much. This can be countered by defining what is `includable` for each serializer when it's being used as the root serializer for a json response.
 
 ```ruby
 class UserSerializer

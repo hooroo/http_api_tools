@@ -181,16 +181,5 @@ module Hat
       end
     end
 
-    describe "#for_query_on" do
-
-      let(:includes) { RelationIncludes.new(:employer, { skills: [:person] }).for_query_on(Person) }
-
-      it "creates includes for included relationships and has_many relationships for fetching ids" do
-        expect(includes.find(:employer)).to eq({ employer: [:employees] })
-        expect(includes.find(:skills)).to eq({ skills: [{ person: [:skills] }] })
-      end
-
-    end
-
   end
 end

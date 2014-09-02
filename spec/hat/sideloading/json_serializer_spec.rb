@@ -57,8 +57,10 @@ module Hat
 
           context "with relations specified as includes" do
 
+            let(:serializer) { PersonSerializer.new(person).includes(:employer, {skills: [:person]}) }
+
             let(:serialized) do
-              PersonSerializer.new(person).includes(:employer, {skills: [:person]}).as_json.with_indifferent_access
+              serializer.as_json.with_indifferent_access
             end
 
             let(:serialized_person) { serialized[:people].first }
@@ -74,6 +76,17 @@ module Hat
 
             it "sideloads has_many relationships" do
               expect(serialized[:linked][:skills].first[:name]).to eql person.skills.first.name
+            end
+
+            describe "#includes_for_query" do
+
+              let(:includes_for_query) { serializer.includes_for_query }
+
+              it "expands includes for included relationships and has_many relationships for fetching ids" do
+                expect(includes_for_query.find(:employer)).to eq({ employer: [:employees] })
+                expect(includes_for_query.find(:skills)).to eq({ skills: [{ person: [:skills] }] })
+              end
+
             end
 
           end

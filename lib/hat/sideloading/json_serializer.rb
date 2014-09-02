@@ -33,26 +33,6 @@ module Hat
         hash
       end
 
-      protected
-
-      attr_accessor :identity_map
-
-      def attributes
-        self.class._attributes
-      end
-
-      def has_ones
-        self.class.has_ones
-      end
-
-      def has_manys
-        self.class.has_manys
-      end
-
-      def includable
-        self.class._includable
-      end
-
       private
 
       attr_reader :relation_sideloader

@@ -3,7 +3,8 @@ module Hat
   class IdentityMap
 
     def initialize
-      @identity_map = {} #Optimised for speed... (don't rewrite this to use hash with indifferent access as it is slower)
+      #Optimised for speed...as tempting as it might be, don't rewrite this to use hash with indifferent access as it is slower.
+      @identity_map = {}
     end
 
     def get(type, id)

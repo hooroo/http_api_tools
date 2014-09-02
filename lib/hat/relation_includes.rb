@@ -27,14 +27,6 @@ module Hat
       new(*flatten(includes_hash))
     end
 
-    # Adds any additional includes to account for ids that will be included in each model.
-    # Interogates both the active record model, it's relationships and the serializers that
-    # will be used to serialize the models to ensure that each of the models who's ids are
-    # to be serialized are included in the main query. This effectively removes n+1 query issues
-    def for_query_on(model_class)
-      RelationIncludes.new(*ExpandedRelationIncludes.new(self, model_class))
-    end
-
     def to_s
       @to_s ||= begin
         paths = []

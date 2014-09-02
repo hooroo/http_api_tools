@@ -17,7 +17,11 @@ module Hat
 
     def serializes(klass)
       self._serializes = klass
-      Hat::SerializerRegistry.instance.register(_type, klass, self)
+      Hat::SerializerRegistry.instance.register(serializer_type, klass, self)
+    end
+
+    def serializable_type
+      self._serializes
     end
 
     def has_ones
@@ -44,13 +48,13 @@ module Hat
       self._includable = RelationIncludes.new(*includes)
     end
 
-    def _type
+    def serializer_type
       if self.ancestors.any? { |klass| klass == Hat::Sideloading::JsonSerializer }
         :sideloading
       elsif self.ancestors.any? { |klass| klass == Hat::Nesting::JsonSerializer }
         :nesting
       else
-        raise "Unsupported serializer type. Must be sideloading or nesting serializer."
+        raise "Unsupported serializer_type. Must be one of either 'sideloading' or 'nesting' serializer."
       end
     end
 
