@@ -32,21 +32,27 @@ module Hat
         return nil unless target_class
 
         existing_deserialized = identity_map.get(target_class.name, json_item['id'])
-
         return existing_deserialized if existing_deserialized
 
         relations = {}
+        target_class_name = target_class.name
 
         #we have to add this before we process subtree or we'll get circular issues
         target = target_class.new(json_item.with_indifferent_access)
-        target_class_name = target_class.name
-
         identity_map.put(target_class_name, json_item['id'], target)
 
         links = json_item['links'] || {}
+        apply_linked_relations_to_target(target, links)
+
+        target
+
+      end
+
+      def apply_linked_relations_to_target(target, links)
+
+        target_class_name = target.class.name
 
         links.each do |relation_name, value|
-
           if value.kind_of?(Array)
             target.send("#{relation_name}=", create_has_manys(target_class_name, relation_name, value))
             target.send("#{relation_name.singularize}_ids=", value)
@@ -54,11 +60,7 @@ module Hat
             target.send("#{relation_name}=", create_belongs_to(target_class_name, relation_name, value))
             target.send("#{relation_name}_id=", value)
           end
-
         end
-
-        target
-
       end
 
       def create_belongs_to(parent_class_name, sideload_key, id)
