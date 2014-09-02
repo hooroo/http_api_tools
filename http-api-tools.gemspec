@@ -4,11 +4,11 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'hat/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "hat"
+  spec.name          = "http-api-tools"
   spec.version       = Hat::VERSION
   spec.authors       = ["Rob Monie"]
   spec.email         = ["robmonie@gmail.com"]
-  spec.description   = %q{Http API Tools - proper name tbd.}
+  spec.description   = %q{Http API Tools}
   spec.summary       = %q{Provides JSON serialization/deserialization and basic model attribute definition for client apps}
   spec.homepage      = ""
   spec.license       = "MIT"
