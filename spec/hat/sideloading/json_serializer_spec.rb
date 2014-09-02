@@ -78,17 +78,6 @@ module Hat
               expect(serialized[:linked][:skills].first[:name]).to eql person.skills.first.name
             end
 
-            describe "#includes_for_query" do
-
-              let(:includes_for_query) { serializer.includes_for_query }
-
-              it "expands includes for included relationships and has_many relationships for fetching ids" do
-                expect(includes_for_query.find(:employer)).to eq({ employer: [:employees] })
-                expect(includes_for_query.find(:skills)).to eq({ skills: [{ person: [:skills] }] })
-              end
-
-            end
-
           end
 
         end

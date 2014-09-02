@@ -246,14 +246,16 @@ and splat into the serializer includes:
 
 and/or active record queries:
 
-`User.find(params[:id]).includes(*user_serializer.includes_for_query)`
+`User.find(params[:id]).includes(*relation_includes.for_query(UserSerializer))`
 
 When providing the includes for an active record query, we actually want a deeper set of includes in order to account for the ids fetched for has_many relationships. If we passed the same set of includes to the query as we pass to the serializer, we'd end up with n+1 queries when fetching the ids for the has_many relationships.
 
-Calling `user_serializer.includes_for_query` will figure out the minimum set of includes that are required based on the following:
+Calling `relation_includes.for_query(UserSerializer)` will figure out the minimum set of includes that are required based on the following:
 
 * The models and their relationships
 * The relationships actually being serialized
+
+**** Note that this particular API is pretty rough at the moment and likely to change once we find a nicer way of describing this feature.
 
 ##### Restricting what is included
 Once you expose what can be included as a query string parameter you risk exposing too much information or poorly considered api calls that fetch too much. This can be countered by defining what is `includable` for each serializer when it's being used as the root serializer for a json response.

@@ -6,8 +6,7 @@ module Hat
 
     describe "#to_a" do
 
-      let(:serializer) { Hat::Sideloading::PersonSerializer.new(Person.new) }
-      let(:expanded_includes) { ExpandedRelationIncludes.new(includes, serializer) }
+      let(:expanded_includes) { ExpandedRelationIncludes.new(includes, Hat::Sideloading::PersonSerializer) }
 
       context 'with single-level includes' do
 

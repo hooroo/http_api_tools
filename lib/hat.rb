@@ -1,4 +1,5 @@
 require "hat/version"
+require 'hat/nesting/json_serializer'
 require 'hat/sideloading/json_serializer'
 require 'hat/sideloading/json_deserializer'
 require 'hat/model'

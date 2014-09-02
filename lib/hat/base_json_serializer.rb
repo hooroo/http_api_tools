@@ -74,10 +74,6 @@ module Hat
       self.class._includable
     end
 
-    def includes_for_query
-      RelationIncludes.new(*ExpandedRelationIncludes.new(relation_includes, self))
-    end
-
     protected
 
     attr_accessor :identity_map

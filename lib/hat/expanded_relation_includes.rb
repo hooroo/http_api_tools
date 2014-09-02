@@ -3,22 +3,22 @@
 module Hat
   class ExpandedRelationIncludes
 
-    def initialize(relation_includes, serializer)
+    def initialize(relation_includes, serializer_class)
       @relation_includes = relation_includes
-      @serializer = serializer
+      @serializer_class = serializer_class
     end
 
     def to_a
       @expanded_includes ||= begin
         expanded_includes = []
-        expand_includes(serializer.class, relation_includes, expanded_includes)
+        expand_includes(serializer_class, relation_includes, expanded_includes)
         expanded_includes
       end
     end
 
     private
 
-    attr_reader :serializer, :relation_includes
+    attr_reader :serializer_class, :relation_includes
 
     def expand_includes(target_serializer_class, base_includes, expanded_includes)
 
