@@ -87,6 +87,16 @@ module Hat
         end
       end
 
+      def set_belongs_to_value(attr_name, id_setter_method_name, value)
+        instance_variable_set("@#{attr_name}", value)
+        send(id_setter_method_name, value.try(:id))
+      end
+
+      def set_has_many_value(attr_name, value)
+        instance_variable_set("@#{attr_name}", HasManyArray.new(value, self, attr_name))
+        has_many_changed(attr_name)
+      end
+
       #----Module Inclusion
 
       def self.included(base)
@@ -107,18 +117,16 @@ module Hat
           end
         end
 
-        def belongs_to(name, options = {})
+        def belongs_to(attr_name, options = {})
 
-          id_attr_name = "#{name}_id"
+          id_attr_name = "#{attr_name}_id"
           id_setter_method_name = "#{id_attr_name}="
 
-          send(:attr_reader, name)
+          send(:attr_reader, attr_name)
           send(:attr_reader, id_attr_name)
 
-          define_method("#{name}=") do |value|
-            instance_variable_set("@#{name}", value)
-            id_value =  value.nil? ? nil : value.id
-            send(id_setter_method_name, id_value)
+          define_method("#{attr_name}=") do |value|
+            set_belongs_to_value(attr_name, id_setter_method_name, value)
           end
 
           define_method(id_setter_method_name) do |value|
@@ -126,17 +134,17 @@ module Hat
           end
         end
 
-        def has_many(name, options = {})
 
-          ids_attr_name = "#{name.to_s.singularize}_ids"
+        def has_many(attr_name, options = {})
+
+          ids_attr_name = "#{attr_name.to_s.singularize}_ids"
           id_setter_method_name = "#{ids_attr_name}="
 
-          send(:attr_reader, name)
+          send(:attr_reader, attr_name)
           send(:attr_reader, ids_attr_name)
 
-          define_method("#{name}=") do |value|
-            instance_variable_set("@#{name}", HasManyArray.new(value, self, name))
-            has_many_changed(name)
+          define_method("#{attr_name}=") do |value|
+            set_has_many_value(attr_name, value)
           end
 
           define_method(id_setter_method_name) do |value|
