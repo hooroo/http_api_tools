@@ -35,25 +35,46 @@ At a high level this gem provides serialization of models (active model or other
 It has been written to work as a whole where the producer and client of the api are both maintained by the same development team. Conventions are used throughout to keep things simple. At this stage, breaking these conventions isn't supported in many cases but the gem can be extended towards this goal as the needs arise. Please see the note on performance in the section on contributing at the end of this document.
 
 ### Serialization
-There is an intentional one-to-one mapping between a model class and it's corresponding serializer class.
+There are two supported serialization formats - sideloading and nesting. Both formats maintain an identical api and
+usage pattern while serializing in different ways. While it is possible to provide both formats in an application, it's likely you'd stick to one as the general philosophy is that a resource should always be represented in the same way.
 
-Eg: For a model called `User`, a serializer called `UserSerializer` would automatically be used to serialize instances.
-
-The intention is that a resource should always be represented in the same way as returning different representations for different scenarios only causes confusion. If the same data needs to be represented using various resources, that's ok, they should however be different resources with different names and different urls.
-
-To use a serializer in a controller you should instantiate an instance of the serializer for the top level type you're serializing and pass it to render:
+To use a serializer in a controller you should instantiate an instance of the serializer for the top level type you're serializing and pass it to render.
 
 `render json: UserSerializer.new(user)`
 
+
+#### Nesting vs Sideloading
+The big difference between these formats is that nesting represents the relationships between resources implicitly in it's structure whereas sideloading is a flattened structure with relationships represented via linked identifiers. The details of these formats will be described in more detail below.
+
+
 #### Serializer Definition
 
-Serializers can define attributes to be serialized and relationships.
+This serializer will either be defined as a nesting or sideloading serializer depening on the serializer it is based on.
 
 ```ruby
 class UserSerializer
 
-  include Hat::JsonSerializer
+  include Hat::Sideloading::JsonSerializer
 
+end
+```
+
+```ruby
+class UserSerializer
+
+  include Hat::Nesting::JsonSerializer
+
+end
+
+
+Serializers can define attributes and relationships to be serialized.
+
+```ruby
+class UserSerializer
+
+  include Hat::Sideloading::JsonSerializer
+
+  serializes(User)
   attributes :id, :first_name, :last_name
   has_many :posts
   has_one :profile
@@ -66,8 +87,9 @@ If you want to serialize any composite attributes they can be defined as a metho
 ```ruby
 class UserSerializer
 
-  include Hat::JsonSerializer
+  include Hat::Sideloading::JsonSerializer
 
+  serializes(User)
   attributes :id, :first_name, :last_name, :full_name
 
   def full_name
@@ -79,9 +101,10 @@ end
 
 #### JSON Structure
 
-Serialization is structured using a 'sideloading' approach for relationships between the serialized data.
-By default, only the ids of related objects will be serialized. These relationships and their ids will be
-added to the `links` hash.
+##### Sideloading
+
+By default, only the ids of related objects will be serialized. For serializers using a 'sideloading' approach, these relationships and their ids will be added to the `links` hash.
+
 
 ```javascript
 {
@@ -97,16 +120,32 @@ added to the `links` hash.
 }
 ```
 
-One advantage to this approach is that it's always clear what relationships exist for a resource, even if you don't
-include the resources themselves in the response. Embedding relationships inside another resource can make it hard
-to know whether a relationship exists, especially if different requests return the same resource in different ways.
+##### Nesting
+As with sideloading serializers, by default, only the ids of related objects will be serialized. For serializers using a 'nesting' approach, these relationships and their ids will be inlined using their _id / _ids attribute name suffix.
 
-##### Sideloading related resources
-Often it will be desirable to sideload the related data to save on requests. This can be done when creating the top level serializer using the same approach ActiveRecord uses for including relationships in queries.
+
+
+```javascript
+{
+ "users": [{
+    "id": 1,
+    "first_name": "John",
+    "last_name": "Smith",
+    "profile_id": 2,
+    "post_ids": [3, 4]
+ }]
+}
+```
+
+One advantage to this approach is that it's always clear what relationships exist for a resource, even if you don't
+include the resources themselves in the response.
+
+##### Serializing related resources via includes
+Often it will be desirable to load related data to save on requests. This can be done when creating the top level serializer using the same approach ActiveRecord uses for including relationships in queries.
 
 `UserSerializer.new(user).includes(:profile, { posts: [:comments] })`
 
-Which produces the following json:
+Which produces the following json when sideloaded:
 
 ```javascript
 {
@@ -157,10 +196,41 @@ Which produces the following json:
 }
 ```
 
-Another benefit to sideloading over nesting resources is that if the same resource is referenced multiple times, it only needs to be serialized once.
+and the following when nested:
 
-##### Url based sideloading
-It's possible to determine what resources to sideload by providing a query string parameter:
+```javascript
+{
+ "users": [{
+    "id": 1,
+    "first_name": "John",
+    "last_name": "Smith",
+    "profile": {
+      "id": 2,
+    },
+    posts: [
+      {
+        "id": 3,
+        "user_id": 1
+        "comments": [
+          {
+            "id": 5,
+            "post_id": 3
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "user_id": 1
+        "comments": []
+      }
+    ]
+  }]
+}
+
+One benefit to sideloading over nesting resources is that if the same resource is referenced multiple times, it only needs to be serialized once. Depending on your data, this may or may not be significant.
+
+##### Including related resources via the url
+It's possible to determine what resources to include by providing a query string parameter:
 
 `http://example.com/users/1?include?comments,posts.comments`
 
@@ -184,12 +254,14 @@ Calling `user_serializer.includes_for_query` will figure out the minimum set of 
 * The relationships actually being serialized
 
 ##### Restricting what is included
-Once you expose what is sideload as a query string parameter you risk exposing too much information or poorly considered api calls that fetch too much. This can be countered by defining what is `includable` for each serializer when it's being used as the root serializer for a json response.
+Once you expose what can be included as a query string parameter you risk exposing too much information or poorly considered api calls that fetch too much. This can be countered by defining what is `includable` for each serializer when it's being used as the root serializer for a json response.
 
 ```ruby
 class UserSerializer
 
-  include Hat::JsonSerializer
+  include Hat::Nesting::JsonSerializer
+
+  serializes(User)
 
   attributes :id, :first_name, :last_name, :full_name
 
@@ -231,7 +303,6 @@ of meta-data. At this point, it will always return the `type` and `root_key` for
     "profile_id": 2,
     "post_ids": [3, 4]
   }]
-  //Sideloaded data goes here
 }
 ```
 
@@ -243,8 +314,10 @@ It might be desirable to add extra metadata to the serialized response. For exam
 
 `UserSerializer.new(user).meta(limit: 10, offset: 0)`
 
+
+
 ### Deserialization
-The `Hat::JsonDeserializer` expects json in the format that the serializer has created making it easy to create matching rest apis and clients with little work needing to be done at each end.
+The `Hat::JsonDeserializer` expects json in the format that the serializer has created making it easy to create matching rest apis and clients with little work needing to be done at each end. Currently only sideloaded json can be deserialized. Nested deserializers are coming.
 
 `Hat::JsonDeserializer.new(json).deserialize`
 
@@ -405,8 +478,8 @@ Until we have a more robust way of tracking performance over time, please do som
 
 
 ## To Do
-* Support polymorhic relationships
-* Support the Json Api UPDATES spec
+* Deserializer for nested json
+
 
 
 
