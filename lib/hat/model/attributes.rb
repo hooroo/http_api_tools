@@ -87,9 +87,9 @@ module Hat
         end
       end
 
-      def set_belongs_to_value(attr_name, id_setter_method_name, value)
+      def set_belongs_to_value(attr_name, value)
         instance_variable_set("@#{attr_name}", value)
-        send(id_setter_method_name, value.try(:id))
+        send("#{attr_name}_id=", value.try(:id))
       end
 
       def set_has_many_value(attr_name, value)
@@ -126,7 +126,7 @@ module Hat
           send(:attr_reader, id_attr_name)
 
           define_method("#{attr_name}=") do |value|
-            set_belongs_to_value(attr_name, id_setter_method_name, value)
+            set_belongs_to_value(attr_name, value)
           end
 
           define_method(id_setter_method_name) do |value|
