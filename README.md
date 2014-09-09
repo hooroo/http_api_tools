@@ -27,7 +27,7 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install hat
+    $ gem install http-api-tools
 
 ## Usage
 At a high level this gem provides serialization of models (active model or otherwise), deserialization of the serialized json and a way to declaritively create basic models in clients with basic type coercion.
