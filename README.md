@@ -1,13 +1,3 @@
-## NOTE: Current WIP branch with a bunch of refactoring towards adding a nested serializer.
-
--------------------------------------------------------------------------------------------
-Design notes for nested serializer:
-
-- The relation_sideloader should be able to become a more generic relation_loader that can support
-loading of both sideloaded and nested structures.
-
-
-
 
 # Http API Tools
 
