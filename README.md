@@ -65,6 +65,7 @@ class UserSerializer
   include Hat::Nesting::JsonSerializer
 
 end
+```
 
 
 Serializers can define attributes and relationships to be serialized.
