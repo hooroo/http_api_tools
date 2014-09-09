@@ -227,6 +227,7 @@ and the following when nested:
     ]
   }]
 }
+```
 
 One benefit to sideloading over nesting resources is that if the same resource is referenced multiple times, it only needs to be serialized once. Depending on your data, this may or may not be significant.
 
