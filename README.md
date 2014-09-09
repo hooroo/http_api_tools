@@ -19,7 +19,7 @@ Adheres to the ID Based Json API Spec - http://jsonapi.org/format/#id-based-json
 
 Add this line to your application's Gemfile:
 
-    gem 'hat'
+    gem 'http-api-tools'
 
 And then execute:
 
