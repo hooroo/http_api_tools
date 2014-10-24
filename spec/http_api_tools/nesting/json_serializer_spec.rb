@@ -22,7 +22,7 @@ module HttpApiTools
       end
 
       describe "serialization of data" do
-        context "with a single top-level serializable object thttp_api_tools has relationship names different to model class" do
+        context "with a single top-level serializable object http_api_tools has relationship names different to model class" do
 
           context "without any includes" do
 
@@ -74,7 +74,7 @@ module HttpApiTools
               expect(serialized[:meta][:includable]).to eq '*'
             end
 
-            it "includes whttp_api_tools was included in meta" do
+            it "includes what was included in meta" do
               expect(serialized[:meta][:included]).to eq 'employer,skills,skills.person'
             end
 
@@ -157,11 +157,11 @@ module HttpApiTools
             expect(limited_serialized[:skills]).to be_nil
           end
 
-          it "includes whttp_api_tools is includable in meta" do
+          it "includes what is includable in meta" do
             expect(limited_serialized[:meta][:includable]).to eq 'skills'
           end
 
-          it "includes whttp_api_tools was included in meta" do
+          it "includes what was included in meta" do
             expect(limited_serialized[:meta][:included]).to eq 'skills'
             expect(unlimited_serialized[:meta][:included]).to eq 'employer,skills,skills.person'
           end

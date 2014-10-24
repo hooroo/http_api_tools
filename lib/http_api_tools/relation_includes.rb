@@ -1,7 +1,7 @@
 require 'active_support/core_ext'
 require 'http_api_tools/expanded_relation_includes'
 
-# Hopefully the spec is robust enough thttp_api_tools we can
+# Hopefully the spec is robust enough http_api_tools we can
 # break this down and refactor as we go. I'm not
 # happy with the complexity of it, but it's a
 # reasonably complex problem

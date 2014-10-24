@@ -1,4 +1,4 @@
-#Adds methods thttp_api_tools help a client to behave as if it's dealing with an ActiveModel object.
+#Adds methods http_api_tools help a client to behave as if it's dealing with an ActiveModel object.
 #Principle of least surprise here - if someone is working in Rails and using a model it should
 #feel normal and they should be able to do all the things the'd do with an active model object except
 #interact with the database.

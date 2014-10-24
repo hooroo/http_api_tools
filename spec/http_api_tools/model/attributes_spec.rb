@@ -97,7 +97,7 @@ module HttpApiTools
 
             end
 
-            it "only allows reading of thttp_api_tools attribute" do
+            it "only allows reading of http_api_tools attribute" do
               expect{ test_model.created_at = Time.now }.to raise_error(NoMethodError)
               expect(test_model.created_at).to be_nil
             end
