@@ -9,7 +9,7 @@ Adheres to the ID Based Json API Spec - http://jsonapi.org/format/#id-based-json
 
 Add this line to your application's Gemfile:
 
-    gem 'http-api-tools'
+    gem 'http_api_tools'
 
 And then execute:
 
@@ -17,7 +17,7 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install http-api-tools
+    $ gem install http_api_tools
 
 ## Usage
 At a high level this gem provides serialization of models (active model or otherwise), deserialization of the serialized json and a way to declaritively create basic models in clients with basic type coercion.
@@ -26,7 +26,7 @@ It has been written to work as a whole where the producer and client of the api 
 
 ### Serialization
 There are two supported serialization formats - sideloading and nesting. Both formats maintain an identical api and
-usage pattern while serializing in different ways. While it is possible to provide both formats in an application, it's likely you'd stick to one as the general philosophy is that a resource should always be represented in the same way.
+usage pattern while serializing in different ways. While it is possible to provide both formats in an application, it's likely you'd stick to one as the general philosophy is thttp_api_tools a resource should always be represented in the same way.
 
 To use a serializer in a controller you should instantiate an instance of the serializer for the top level type you're serializing and pass it to render.
 
@@ -34,7 +34,7 @@ To use a serializer in a controller you should instantiate an instance of the se
 
 
 #### Nesting vs Sideloading
-The big difference between these formats is that nesting represents the relationships between resources implicitly in it's structure whereas sideloading is a flattened structure with relationships represented via linked identifiers. The details of these formats will be described in more detail below.
+The big difference between these formats is thttp_api_tools nesting represents the relationships between resources implicitly in it's structure whereas sideloading is a flattened structure with relationships represented via linked identifiers. The details of these formats will be described in more detail below.
 
 
 #### Serializer Definition
@@ -44,7 +44,7 @@ This serializer will either be defined as a nesting or sideloading serializer de
 ```ruby
 class UserSerializer
 
-  include Hat::Sideloading::JsonSerializer
+  include HttpApiTools::Sideloading::JsonSerializer
 
 end
 ```
@@ -52,7 +52,7 @@ end
 ```ruby
 class UserSerializer
 
-  include Hat::Nesting::JsonSerializer
+  include HttpApiTools::Nesting::JsonSerializer
 
 end
 ```
@@ -63,7 +63,7 @@ Serializers can define attributes and relationships to be serialized.
 ```ruby
 class UserSerializer
 
-  include Hat::Sideloading::JsonSerializer
+  include HttpApiTools::Sideloading::JsonSerializer
 
   serializes(User)
   attributes :id, :first_name, :last_name
@@ -78,7 +78,7 @@ If you want to serialize any composite attributes they can be defined as a metho
 ```ruby
 class UserSerializer
 
-  include Hat::Sideloading::JsonSerializer
+  include HttpApiTools::Sideloading::JsonSerializer
 
   serializes(User)
   attributes :id, :first_name, :last_name, :full_name
@@ -128,7 +128,7 @@ As with sideloading serializers, by default, only the ids of related objects wil
 }
 ```
 
-One advantage to this approach is that it's always clear what relationships exist for a resource, even if you don't
+One advantage to this approach is thttp_api_tools it's always clear whttp_api_tools relationships exist for a resource, even if you don't
 include the resources themselves in the response.
 
 ##### Serializing related resources via includes
@@ -219,16 +219,16 @@ and the following when nested:
 }
 ```
 
-One benefit to sideloading over nesting resources is that if the same resource is referenced multiple times, it only needs to be serialized once. Depending on your data, this may or may not be significant.
+One benefit to sideloading over nesting resources is thttp_api_tools if the same resource is referenced multiple times, it only needs to be serialized once. Depending on your data, this may or may not be significant.
 
 ##### Including related resources via the url
-It's possible to determine what resources to include by providing a query string parameter:
+It's possible to determine whttp_api_tools resources to include by providing a query string parameter:
 
 `http://example.com/users/1?include?comments,posts.comments`
 
 This can be parsed using:
 
-`relation_includes = Hat::RelationIncludes.from_params(params)`
+`relation_includes = HttpApiTools::RelationIncludes.from_params(params)`
 
 and splat into the serializer includes:
 
@@ -240,20 +240,20 @@ and/or active record queries:
 
 When providing the includes for an active record query, we actually want a deeper set of includes in order to account for the ids fetched for has_many relationships. If we passed the same set of includes to the query as we pass to the serializer, we'd end up with n+1 queries when fetching the ids for the has_many relationships.
 
-Calling `relation_includes.for_query(UserSerializer)` will figure out the minimum set of includes that are required based on the following:
+Calling `relation_includes.for_query(UserSerializer)` will figure out the minimum set of includes thttp_api_tools are required based on the following:
 
 * The models and their relationships
 * The relationships actually being serialized
 
-**** Note that this particular API is pretty rough at the moment and likely to change once we find a nicer way of describing this feature.
+**** Note thttp_api_tools this particular API is pretty rough at the moment and likely to change once we find a nicer way of describing this feature.
 
-##### Restricting what is included
-Once you expose what can be included as a query string parameter you risk exposing too much information or poorly considered api calls that fetch too much. This can be countered by defining what is `includable` for each serializer when it's being used as the root serializer for a json response.
+##### Restricting whttp_api_tools is included
+Once you expose whttp_api_tools can be included as a query string parameter you risk exposing too much information or poorly considered api calls thttp_api_tools fetch too much. This can be countered by defining whttp_api_tools is `includable` for each serializer when it's being used as the root serializer for a json response.
 
 ```ruby
 class UserSerializer
 
-  include Hat::Nesting::JsonSerializer
+  include HttpApiTools::Nesting::JsonSerializer
 
   serializes(User)
 
@@ -267,9 +267,9 @@ class UserSerializer
 end
 ```
 
-This will ensure that regardless of what is declared in the `include` param, no more than the allowable includes are ever returned.
+This will ensure thttp_api_tools regardless of whttp_api_tools is declared in the `include` param, no more than the allowable includes are ever returned.
 
-To help in documenting what is includable, both the includable and included relations are returned in the meta data of the response.
+To help in documenting whttp_api_tools is includable, both the includable and included relations are returned in the meta data of the response.
 
 ```javascript
 "meta": {
@@ -300,22 +300,22 @@ of meta-data. At this point, it will always return the `type` and `root_key` for
 }
 ```
 
-Notice that the root is an array and the root_key a plural. This is the case regardless of whether a single resource
+Notice thttp_api_tools the root is an array and the root_key a plural. This is the case regardless of whether a single resource
 is being represented or a collection of resources. This is in line with the json-api spec and generally simplifies both serialization and deserialization.
 
 ##### Adding Metadata
-It might be desirable to add extra metadata to the serialized response. For example, adding information such as limit, offset, what includes are valid etc can be helpful to a client.
+It might be desirable to add extra metadata to the serialized response. For example, adding information such as limit, offset, whttp_api_tools includes are valid etc can be helpful to a client.
 
 `UserSerializer.new(user).meta(limit: 10, offset: 0)`
 
 
 
 ### Deserialization
-The `Hat::JsonDeserializer` expects json in the format that the serializer has created making it easy to create matching rest apis and clients with little work needing to be done at each end. Currently only sideloaded json can be deserialized. Nested deserializers are coming.
+The `HttpApiTools::JsonDeserializer` expects json in the format thttp_api_tools the serializer has created making it easy to create matching rest apis and clients with little work needing to be done at each end. Currently only sideloaded json can be deserialized. Nested deserializers are coming.
 
-`Hat::JsonDeserializer.new(json).deserialize`
+`HttpApiTools::JsonDeserializer.new(json).deserialize`
 
-This will iterate over the json, using the attribute names to match types to models in the client app. As long as models exist with names that match the keys in the json, a complete graph of objects will be created upon deserialization, complete with two way relationships when they exist.
+This will iterate over the json, using the attribute names to match types to models in the client app. As long as models exist with names thttp_api_tools match the keys in the json, a complete graph of objects will be created upon deserialization, complete with two way relationships when they exist.
 
 In the previous example, the following model classes would be expected:
 
@@ -349,12 +349,12 @@ At times, the name of an object's key may deviate from it's type and can't be de
 }
 ```
 
-In this example, the `user` is the `author` of the `post`. It is impossible to infer from the data that an `author` attribute key should map to a `User` type so we need to give it a helping hand. This can be done once per type by creating a `JsonDeserializerMapping` class. Like with serializers, deserializer mappings are convention based, using the model class name as a prefix.
+In this example, the `user` is the `author` of the `post`. It is impossible to infer from the data thttp_api_tools an `author` attribute key should map to a `User` type so we need to give it a helping hand. This can be done once per type by creating a `JsonDeserializerMapping` class. Like with serializers, deserializer mappings are convention based, using the model class name as a prefix.
 
 ```ruby
 class PostDeserializerMapping
 
-  include Hat::JsonDeserializerMapping
+  include HttpApiTools::JsonDeserializerMapping
 
   map :author, User
 
@@ -368,7 +368,7 @@ This can also be applied against collections:
 ```ruby
 class CompanyDeserializerMapping
 
-  include Hat::JsonDeserializerMapping
+  include HttpApiTools::JsonDeserializerMapping
 
   map :employees, Person
 
@@ -376,15 +376,15 @@ end
 ```
 
 ### Models
-Client models have some basic requirements that are catered to such as attribute definition, default values and type tranforms.
+Client models have some basic requirements thttp_api_tools are catered to such as attribute definition, default values and type tranforms.
 
 For example:
 
 ```ruby
 class User
 
-  include Hat::Model::Attributes
-  include Hat::Model::ActsLikeActiveModel
+  include HttpApiTools::Model::Attributes
+  include HttpApiTools::Model::ActsLikeActiveModel
 
   attribute :id
   attribute :first_name
@@ -422,7 +422,7 @@ Transformers should then be registered against a type key:
 
 
 ```ruby
-Hat::Transformers::Registry.instance.register(:money, MoneyTransformer)
+HttpApiTools::Transformers::Registry.instance.register(:money, MoneyTransformer)
 ```
 
 Now you can define an attribute as a `money` type:
@@ -430,7 +430,7 @@ Now you can define an attribute as a `money` type:
 ```ruby
 class Account
 
-  include Hat::Model::Attributes
+  include HttpApiTools::Model::Attributes
 
   attribute :balance: type: :money
 
@@ -438,15 +438,15 @@ end
 ```
 
 #### Read only attributes
-Sometimes it's useful to define a field as readonly. The intent being that we prevent changing an attribute value that shouldn't be changed or prevent a value from being serialized and sent in the payload that the server won't accept.
+Sometimes it's useful to define a field as readonly. The intent being thttp_api_tools we prevent changing an attribute value thttp_api_tools shouldn't be changed or prevent a value from being serialized and sent in the payload thttp_api_tools the server won't accept.
 
 In the previous example, it might be better to set the `created_at` field as readonly:
 
 ```ruby
 class User
 
-  include Hat::Model::Attributes
-  include Hat::Model::ActsLikeActiveModel
+  include HttpApiTools::Model::Attributes
+  include HttpApiTools::Model::ActsLikeActiveModel
 
   attribute :id
   attribute :first_name
@@ -466,7 +466,7 @@ At this point, polymorphic relationships are not catered for but they can be whe
 
 ### A note on performance
 Performance is critial for this gem so any changes must be made with this in mind. There is a basic performance
-spec for serialization that dumps some timings and creates a profile report in `reports/profile_report.html`.
+spec for serialization thttp_api_tools dumps some timings and creates a profile report in `reports/profile_report.html`.
 
 Until we have a more robust way of tracking performance over time, please do some before and after tests against this when you make changes. Even small things have been found to introduce big performance issues.
 

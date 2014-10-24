@@ -2,5 +2,5 @@
 
 source 'https://rubygems.org'
 
-# Specify your gem's dependencies in hat.gemspec
+# Specify your gem's dependencies in http_api_tools.gemspec
 gemspec
