@@ -19,10 +19,20 @@ Or install it yourself as:
 
     $ gem install http_api_tools
 
+
 ## Usage
 At a high level this gem provides serialization of models (active model or otherwise), deserialization of the serialized json and a way to declaritively create basic models in clients with basic type coercion.
 
 It has been written to work as a whole where the producer and client of the api are both maintained by the same development team. Conventions are used throughout to keep things simple. At this stage, breaking these conventions isn't supported in many cases but the gem can be extended towards this goal as the needs arise. Please see the note on performance in the section on contributing at the end of this document.
+
+
+### Config
+
+Create an app initializer in `config/initializers/http_api_tools.rb` with the following.
+
+```ruby
+HttpApiTools::SerializerLoader.preload
+```
 
 ### Serialization
 There are two supported serialization formats - sideloading and nesting. Both formats maintain an identical api and
