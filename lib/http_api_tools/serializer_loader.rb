@@ -1,7 +1,7 @@
 module HttpApiTools
   class SerializerLoader
 
-    def self.load_serializers
+    def self.preload
 
       file_names = Dir.entries(Rails.root.join('app', 'serializers')).select { |file_name| file_name.end_with?('serializer.rb') }.reverse
 
@@ -17,3 +17,4 @@ module HttpApiTools
 
   end
 end
+

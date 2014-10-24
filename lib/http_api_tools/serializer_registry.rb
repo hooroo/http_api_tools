@@ -6,11 +6,6 @@ module HttpApiTools
 
     include Singleton
 
-    def initialize
-      #Make sure all serializers have been loaded so that relationships can be properly resolved
-      HttpApiTools::SerializerLoader.load_serializers
-    end
-
     def get(type, class_name)
       registry.fetch(type.to_sym, {})[class_name]
     end
