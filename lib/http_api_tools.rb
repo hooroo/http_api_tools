@@ -6,5 +6,7 @@ require 'http_api_tools/model'
 require 'http_api_tools/relation_includes'
 
 module HttpApiTools
-  # Your code goes here...
+
+  #Make sure all serializers have been loaded so that relationships can be properly resolved
+  SerializerLoader.load_serializers
 end
