@@ -70,7 +70,8 @@ module HttpApiTools
       end
 
       def serializer_class_for(serializable)
-        HttpApiTools::SerializerRegistry.instance.get(:sideloading, serializable.class)
+        serializer_class = HttpApiTools::SerializerRegistry.instance.get(:sideloading, serializable.class)
+        serializer_class || raise("No Serializer found for #{serializable.class}")
       end
 
 

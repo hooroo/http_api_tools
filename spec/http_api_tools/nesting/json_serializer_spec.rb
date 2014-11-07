@@ -36,7 +36,7 @@ module HttpApiTools
             end
 
             it 'expect basic attributes with no value' do
-              expect(serialized_person.has_key?(:dob)).to be_true
+              expect(serialized_person).to have_key(:dob)
             end
 
             it "serializes attributes defined as methods on the serializer" do

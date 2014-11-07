@@ -139,15 +139,15 @@ module HttpApiTools
       let(:includes) { RelationIncludes.new(:a, { b: [:c] }) }
 
       it "includes correct relations when a symbol" do
-        expect(includes.includes_relation?(:a)).to be_true
+        expect(includes.includes_relation?(:a)).to be_truthy
       end
 
       it "includes relations when key of object" do
-        expect(includes.includes_relation?(:b)).to be_true
+        expect(includes.includes_relation?(:b)).to be_truthy
       end
 
       it "does not include unspecified relations" do
-        expect(includes.includes_relation?(:x)).to be_false
+        expect(includes.includes_relation?(:x)).to be_falsey
       end
 
     end
