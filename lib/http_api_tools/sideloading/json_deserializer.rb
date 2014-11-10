@@ -56,10 +56,10 @@ module HttpApiTools
 
         links.each do |relation_name, value|
           if value.kind_of?(Array)
-            target.send("#{relation_name}=", create_has_manys(target_class_name, relation_name, value))
+            target.send("#{relation_name}=", create_has_manys(target_class_name, relation_name, value)) if target.respond_to?("#{relation_name}=")
             target.send("#{relation_name.singularize}_ids=", value)
           else
-            target.send("#{relation_name}=", create_belongs_to(target_class_name, relation_name, value))
+            target.send("#{relation_name}=", create_belongs_to(target_class_name, relation_name, value)) if target.respond_to?("#{relation_name}=")
             target.send("#{relation_name}_id=", value)
           end
         end
