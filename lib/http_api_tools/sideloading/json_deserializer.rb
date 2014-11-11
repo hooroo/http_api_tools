@@ -1,8 +1,8 @@
 # encoding: utf-8
 
-# Takes a sideloaded json response and builds an object graph with cyclic
-# relationships using models defined using HttpApiTools::Attribute mappings.
-
+#Takes a json response based on the active-model-serializer relationship sideloading pattern
+#and given a root object key, builds an object graph with cyclic relationships.
+#See the id based pattern here - https://github.com/rails-api/active_model_serializers
 require 'active_support/core_ext/hash/indifferent_access'
 require_relative 'sideload_map'
 require_relative '../identity_map'
@@ -44,41 +44,24 @@ module HttpApiTools
         identity_map.put(target_class_name, json_item['id'], target)
 
         links = json_item['links'] || {}
-
-        apply_has_many_relations_to_target(target, links)
-        apply_belongs_to_relations_to_target(target, links)
+        apply_linked_relations_to_target(target, links)
 
         target
 
       end
 
-      def apply_has_many_relations_to_target(target, links)
+      def apply_linked_relations_to_target(target, links)
 
-        target.class.has_many_relations.keys.each do |relation_name|
+        target_class_name = target.class.name
 
-          relation_name = relation_name.to_s
-
-          if links.has_key?(relation_name)
-            linked_ids = links[relation_name]
-            target.send("#{relation_name}=", create_has_manys(target.class.name, relation_name, linked_ids))
-            target.send("#{relation_name.singularize}_ids=", linked_ids)
+        links.each do |relation_name, value|
+          if value.kind_of?(Array)
+            target.send("#{relation_name}=", create_has_manys(target_class_name, relation_name, value)) if target.respond_to?("#{relation_name}=")
+            target.send("#{relation_name.singularize}_ids=", value)
+          else
+            target.send("#{relation_name}=", create_belongs_to(target_class_name, relation_name, value)) if target.respond_to?("#{relation_name}=")
+            target.send("#{relation_name}_id=", value)
           end
-
-        end
-      end
-
-      def apply_belongs_to_relations_to_target(target, links)
-
-        target.class.belongs_to_relations.keys.each do |relation_name|
-
-          relation_name = relation_name.to_s
-
-          if links.has_key?(relation_name)
-            linked_id = links[relation_name.to_s]
-            target.send("#{relation_name}=", create_belongs_to(target.class.name, relation_name, linked_id))
-            target.send("#{relation_name}_id=", linked_id)
-          end
-
         end
       end
 

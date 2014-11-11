@@ -102,43 +102,22 @@ module HttpApiTools
       def self.included(base)
         base.class_attribute :_attributes
         base._attributes = {}
-
-        base.class_attribute :_has_many_relations
-        base._has_many_relations = {}
-
-        base.class_attribute :_belongs_to_relations
-        base._belongs_to_relations = {}
-
         base.extend(ClassMethods)
         base.send(:attr_accessor, :errors)
       end
 
       module ClassMethods
 
-        def attributes
-          self._attributes
-        end
-
-        def belongs_to_relations
-          self._belongs_to_relations
-        end
-
-        def has_many_relations
-          self._has_many_relations
-        end
-
-        def attribute(attr_name, options = {})
-          self._attributes[attr_name] = options
+        def attribute(name, options = {})
+          self._attributes[name] = options
           if options[:read_only]
-            self.send(:attr_reader, attr_name.to_sym)
+            self.send(:attr_reader, name.to_sym)
           else
-            self.send(:attr_accessor, attr_name.to_sym)
+            self.send(:attr_accessor, name.to_sym)
           end
         end
 
         def belongs_to(attr_name, options = {})
-
-          self._belongs_to_relations[attr_name] = options
 
           id_attr_name = "#{attr_name}_id"
           id_setter_method_name = "#{id_attr_name}="
@@ -157,8 +136,6 @@ module HttpApiTools
 
 
         def has_many(attr_name, options = {})
-
-          self._has_many_relations[attr_name] = options
 
           ids_attr_name = "#{attr_name.to_s.singularize}_ids"
           id_setter_method_name = "#{ids_attr_name}="
