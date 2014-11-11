@@ -9,10 +9,6 @@ module HttpApiTools
         require file_name
       end
 
-    rescue StandardError => e
-
-      #no serializers directory found to load
-
     end
 
   end
