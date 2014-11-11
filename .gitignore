@@ -16,3 +16,4 @@ test/tmp
 test/version_tmp
 tmp
 reports/profile_report.html
+.ruby-version
