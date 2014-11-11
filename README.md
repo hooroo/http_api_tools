@@ -400,8 +400,9 @@ class User
   attribute :first_name
   attribute :last_name
   attribute :created_at: type: :date_time
-  attribute :posts, default: []
-  attribute :profile
+
+  has_many :posts
+  belongs_to :profile
 
 end
 ```
@@ -409,6 +410,23 @@ end
 This will define a User class with attr_accessors for all attributes defined. The initialize method will accept a hash of values which will be passed through type transformers when configured and have defaults applied when no value is passed in for a key.
 
 Currently there is a single registered type transform for date_time transforms. This expects an iso8601 date format as a string which will be transformed into a ruby DateTime.
+
+#### Relationships
+
+`Belongs to` and `has many` relationships should be declared explictly. This will do a couple of things...
+
+* The deserializer will maintain the bi-directional relationship between these models.
+* Active Record style attribute accessors for the id representations of the relationships will be made available and maintained.
+
+For example, adding the `has_many :posts` declaration to a class will automcatically create the following methods:
+
+* `posts=` - for setting the collection of posts
+* `posts` - for getting the collection of posts
+* `post_ids=` - for setting the ids of the posts
+* `post_ids` - for gettings the ids of the posts
+
+Any modification to the `posts` attribute will immediately be reflected in the post_ids attribute. This includes replacing it's contents, or manipulating the underlying array by adding or removing items.
+
 
 #### Registering custom type transformers.
 
@@ -462,8 +480,8 @@ class User
   attribute :first_name
   attribute :last_name
   attribute :created_at: type: :date_time, read_only: true
-  attribute :posts, default: []
-  attribute :profile
+  has_many :posts
+  belongs_to :profile
 
 end
 ```
