@@ -24,7 +24,7 @@ class Person
   def self.reflections
     {
       employer: OpenStruct.new(class_name: 'Company'),
-      skills:   OpenStruct.new(class_name: 'Skill')
+      skills: OpenStruct.new(class_name: 'Skill')
     }
   end
 
@@ -46,10 +46,10 @@ class Company
   #Act like active record for reflectively interogating type info
   def self.reflections
     {
-      employees:      OpenStruct.new(class_name: 'Person'),
-      suppliers:      OpenStruct.new(class_name: 'Company'),
+      employees: OpenStruct.new(class_name: 'Person'),
+      suppliers: OpenStruct.new(class_name: 'Company'),
       parent_company: OpenStruct.new(class_name: 'Company'),
-      address:        OpenStruct.new(class_name: 'Address')
+      address: OpenStruct.new(class_name: 'Address')
     }
   end
 
@@ -79,11 +79,9 @@ end
 
 class Address
 
-  attr_accessor :id, :street_address
+  include HttpApiTools::Model::Attributes
 
-  def initialize(attrs)
-    @id = attrs[:id]
-    @street_address = attrs[:street_address]
-  end
+  attribute :id
+  attribute :street_address
 
 end
