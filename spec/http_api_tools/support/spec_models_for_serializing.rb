@@ -16,10 +16,6 @@ class Person
   belongs_to :employer
   has_many :skills
 
-  def employer_id
-    employer.try(:id)
-  end
-
   #Act like active record for reflectively interogating type info
   def self.reflections
     {
@@ -63,10 +59,6 @@ class Skill
   attribute :name
   attribute :description
   belongs_to :person
-
-  def person_id
-    person.try(:id)
-  end
 
   #Act like active record for reflectively interogating type info
   def self.reflections

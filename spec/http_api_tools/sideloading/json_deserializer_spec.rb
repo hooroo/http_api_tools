@@ -44,7 +44,7 @@ module HttpApiTools
       end
 
       let(:company) do
-        JsonDeserializer.new(json).deserialize.first
+        JsonDeserializer.new(json, ForDeserializing).deserialize.first
       end
 
       describe "basic deserialization" do
@@ -52,6 +52,10 @@ module HttpApiTools
         it "creates model from the root object" do
           expect(company.id).to eq json['companies'][0]['id']
           expect(company.name).to eq json['companies'][0]['name']
+        end
+
+        it "serializes within the specified namespace" do
+          expect(company.class).to eq ForDeserializing::Company
         end
 
         it "can set read-only attributes" do
