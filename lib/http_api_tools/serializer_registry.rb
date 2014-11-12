@@ -11,11 +11,7 @@ module HttpApiTools
     end
 
     def register(type, class_name, serializer)
-      if existing_serializer = get(type, class_name)
-        raise "A '#{type}' serializer for '#{class_name}' instances has already been registered as #{existing_serializer.name}"
-      else
-        registry[type.to_sym][class_name] = serializer
-      end
+      registry[type.to_sym][class_name] = serializer
     end
 
     private
