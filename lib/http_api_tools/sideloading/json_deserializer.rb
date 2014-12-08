@@ -11,12 +11,13 @@ module HttpApiTools
   module Sideloading
     class JsonDeserializer
 
-      def initialize(json)
+      def initialize(json, target_namespace = nil)
         @json = json
         @root_key = json['meta']['root_key'].to_s
         @identity_map = IdentityMap.new
         @sideload_map = SideloadMap.new(json, root_key)
         @key_to_class_mappings = {}
+        @target_namespace = target_namespace
       end
 
       def deserialize
@@ -28,6 +29,7 @@ module HttpApiTools
       private
 
       attr_accessor :json, :root_key, :sideload_map, :identity_map, :key_to_class_mappings
+      attr_reader :target_namespace
 
       def create_from_json_item(target_class, json_item)
 
@@ -109,7 +111,7 @@ module HttpApiTools
         class_mapping = key_to_class_mappings[parent_class_name]
 
         if attribute_mapping = class_mapping[sideload_key.to_sym]
-          return attribute_mapping.name.underscore
+          return attribute_mapping.name.split('::').last.underscore
         end
 
         sideload_key
@@ -117,7 +119,9 @@ module HttpApiTools
 
       def resolve_class_mappings_for(parent_class_name)
         unless key_to_class_mappings[parent_class_name]
+
           mapping_class_name = "#{parent_class_name}DeserializerMapping"
+
           if Object.const_defined?(mapping_class_name)
             key_to_class_mappings[parent_class_name] = mapping_class_name.constantize.mappings
           else
@@ -127,7 +131,7 @@ module HttpApiTools
       end
 
       def target_class_for_key(key)
-        key.to_s.singularize.camelize.constantize
+        [target_namespace.name, key.to_s.singularize.camelize].compact.join('::').constantize
       rescue NameError
         nil
       end

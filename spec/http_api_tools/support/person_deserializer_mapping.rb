@@ -1,9 +1,11 @@
 require 'http_api_tools/sideloading/json_deserializer_mapping'
 
-class PersonDeserializerMapping
+module ForDeserializing
+  class PersonDeserializerMapping
 
-  include HttpApiTools::Sideloading::JsonDeserializerMapping
+    include HttpApiTools::Sideloading::JsonDeserializerMapping
 
-  map :employer, Company
+    map :employer, ForDeserializing::Company
 
+  end
 end
