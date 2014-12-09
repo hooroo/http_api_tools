@@ -11,13 +11,13 @@ module HttpApiTools
   module Sideloading
     class JsonDeserializer
 
-      def initialize(json, target_namespace = nil)
+      def initialize(json, opts = { namespace: nil })
         @json = json
         @root_key = json['meta']['root_key'].to_s
         @identity_map = IdentityMap.new
         @sideload_map = SideloadMap.new(json, root_key)
         @key_to_class_mappings = {}
-        @target_namespace = target_namespace
+        @namespace = opts[:namespace]
       end
 
       def deserialize
@@ -29,7 +29,7 @@ module HttpApiTools
       private
 
       attr_accessor :json, :root_key, :sideload_map, :identity_map, :key_to_class_mappings
-      attr_reader :target_namespace
+      attr_reader :namespace
 
       def create_from_json_item(target_class, json_item)
 
@@ -131,7 +131,7 @@ module HttpApiTools
       end
 
       def target_class_for_key(key)
-        [target_namespace.name, key.to_s.singularize.camelize].compact.join('::').constantize
+        [namespace.name, key.to_s.singularize.camelize].compact.join('::').constantize
       rescue NameError
         nil
       end

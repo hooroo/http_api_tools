@@ -325,13 +325,28 @@ The `HttpApiTools::JsonDeserializer` expects json in the format that the seriali
 
 `HttpApiTools::JsonDeserializer.new(json).deserialize`
 
-This will iterate over the json, using the attribute names to match types to models in the client app. As long as models exist with names that match the keys in the json, a complete graph of objects will be created upon deserialization, complete with two way relationships when they exist.
+This will iterate over the json, using the attribute names to match types to models in the client app. As long as models exist with names that match the keys in the json, a complete graph of objects will be created upon deserialization, complete with bi-directional relationships when they exist.
 
 In the previous example, the following model classes would be expected:
 
 * User
 * Post
 * Comment
+
+
+#### Namespaced Models
+
+At times it might be desirable to namespace your client models. One reason for this might be to differentiate models based on the service or external domain that they are based on. This can also help prevent name clashes between the local application models and remote service models.
+
+For example, a client application that is also a rails application with it's own persistence might have a concept of a `Post` which is also present in the Content Management Service.
+
+So locally your rails model can be called `Post` and your remote `Post` from the CMS can be namespaced as `Cms::Post`.
+
+When deserializing from the CMS service you can select the namespace to deserialize under by defining the namespace in the deserializer:
+
+```ruby
+`HttpApiTools::JsonDeserializer.new(json, namespace: Cms).deserialize`
+```
 
 #### Deserializer Mappings
 
