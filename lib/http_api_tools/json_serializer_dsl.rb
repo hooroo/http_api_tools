@@ -17,7 +17,7 @@ module HttpApiTools
 
     def serializes(klass)
       self._serializes = klass
-      HttpApiTools::SerializerRegistry.instance.register(serializer_type, klass, self)
+      HttpApiTools::SerializerRegistry.instance.register(serializer_type, klass.name, self)
     end
 
     def serializable_type

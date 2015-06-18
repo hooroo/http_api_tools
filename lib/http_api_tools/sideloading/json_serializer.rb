@@ -112,7 +112,7 @@ module HttpApiTools
       end
 
       def serializer_class_for(serializable)
-        HttpApiTools::SerializerRegistry.instance.get(:sideloading, serializable.class)
+        HttpApiTools::SerializerRegistry.instance.get(:sideloading, serializable.class.name)
       end
 
       def self.included(serializer_class)
