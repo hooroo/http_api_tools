@@ -318,6 +318,36 @@ It might be desirable to add extra metadata to the serialized response. For exam
 
 `UserSerializer.new(user).meta(limit: 10, offset: 0)`
 
+#### Serializer Groups
+As an application grows, it might be necessary to provide multiple representations of the same model for different purposes. This can be achieved by grouping serializers that are intended to work together via the `group` option in the serializer config.
+
+```ruby
+class SummaryUserSerializer
+  include HttpApiTools::Nesting::JsonSerializer
+
+  serializes(User, group: :summary)
+
+  attributes :id, :first_name, :last_name
+
+  has_many :posts
+end
+```
+
+```ruby
+class SummaryPostSerializer
+  include HttpApiTools::Nesting::JsonSerializer
+
+  serializes(User, group: :summary)
+
+  attributes :id, :title
+
+  belongs_to :user
+end
+```
+
+In this example, when the `SummaryUserSerializer traverses the `posts` relationship, it will use the `SummaryPostSerializer` to serialize posts as both serializers have been configured to belong to the `:summary` group. The group name is not important, and can be any symbol or strong your like to identify the serializer grouping.
+
+When a serializer is configured without an explicit group, the `:default` group is used.
 
 
 ### Deserialization
