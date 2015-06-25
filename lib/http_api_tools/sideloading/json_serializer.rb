@@ -95,7 +95,8 @@ module HttpApiTools
           relation_includes: relation_includes,
           identity_map: identity_map,
           type_key_resolver: type_key_resolver,
-          result: result
+          result: result,
+          serializer_group: serializer_group
         )
       end
 
@@ -112,7 +113,7 @@ module HttpApiTools
       end
 
       def serializer_class_for(serializable)
-        HttpApiTools::SerializerRegistry.instance.get(:sideloading, serializable.class.name)
+        HttpApiTools::SerializerRegistry.instance.get(:sideloading, serializer_group, serializable.class.name)
       end
 
       def self.included(serializer_class)

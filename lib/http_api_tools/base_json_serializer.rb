@@ -99,5 +99,9 @@ module HttpApiTools
       raise "serializable items must have an id attribute" unless serializable_item.respond_to?(:id)
     end
 
+    def serializer_group
+      self.class.serializer_group
+    end
+
   end
 end

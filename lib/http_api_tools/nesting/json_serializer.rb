@@ -29,6 +29,7 @@ module HttpApiTools
 
       def relation_loader
         @relation_loader ||= Relationloader.new({
+          serializer_group: serializer_group,
           serializable: serializable,
           has_manys: has_manys,
           has_ones: has_ones,

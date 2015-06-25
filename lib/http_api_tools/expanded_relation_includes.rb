@@ -37,7 +37,7 @@ module HttpApiTools
     def expand_includes_for_symbol(include_item, target_serializer_class, expanded_includes)
 
       related_type = target_serializer_class.serializable_type.reflections[include_item].class_name.constantize
-      related_serializer = SerializerRegistry.instance.get(target_serializer_class.serializer_type, related_type.name)
+      related_serializer = SerializerRegistry.instance.get(target_serializer_class.serializer_type, target_serializer_class.serializer_group, related_type.name)
       new_nested_includes = []
 
       append_has_many_includes(related_serializer, [], new_nested_includes)
@@ -56,7 +56,7 @@ module HttpApiTools
       nested_includes = include_item[nested_include_key]
 
       related_type = target_serializer_class.serializable_type.reflections[nested_include_key].class_name.constantize
-      related_serializer = SerializerRegistry.instance.get(target_serializer_class.serializer_type, related_type.name)
+      related_serializer = SerializerRegistry.instance.get(target_serializer_class.serializer_type, target_serializer_class.serializer_group, related_type.name)
       new_nested_includes = []
 
       expanded_includes << { nested_include_key => new_nested_includes }

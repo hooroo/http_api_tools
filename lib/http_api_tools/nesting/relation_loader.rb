@@ -3,6 +3,7 @@ module HttpApiTools
     class Relationloader
 
       def initialize(opts = {})
+        @serializer_group = opts[:serializer_group]
         @serializable = opts[:serializable]
         @has_ones = opts[:has_ones]
         @has_manys = opts[:has_manys]
@@ -15,7 +16,7 @@ module HttpApiTools
 
       private
 
-      attr_reader :serializable, :has_ones, :has_manys, :relation_includes
+      attr_reader :serializer_group, :serializable, :has_ones, :has_manys, :relation_includes
 
       def has_one_hash
         has_ones.inject({}) { |has_one_hash, attr_name| serialize_has_one_relation(has_one_hash, attr_name) }
@@ -81,7 +82,7 @@ module HttpApiTools
       end
 
       def serializer_class_for(serializable)
-        serializer_class = HttpApiTools::SerializerRegistry.instance.get(:nesting, serializable.class.name)
+        serializer_class = HttpApiTools::SerializerRegistry.instance.get(:nesting, serializer_group, serializable.class.name)
         serializer_class || raise("No Serializer found for #{serializable.class.name}")
       end
 

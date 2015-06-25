@@ -8,10 +8,10 @@ module HttpApiTools
 
     describe JsonSerializer do
 
-      let(:company) { Company.new(id: 1, name: 'Hooroo') }
-      let(:person) { Person.new(id: 2, first_name: 'Rob', last_name: 'Monie') }
-      let(:skill) { Skill.new(id: 3, name: "JSON Serialization") }
-      let(:skill2) { Skill.new(id: 4, name: "JSON Serialization 2") }
+      let(:company) { Company.new(id: 1, name: 'Hooroo', phone: '555010101') }
+      let(:person) { Person.new(id: 2, first_name: 'Rob', last_name: 'Monie', dob: '1976-01-01', email: 'rob@example.com') }
+      let(:skill) { Skill.new(id: 3, name: "JSON Serialization", descripton: 'description') }
+      let(:skill2) { Skill.new(id: 4, name: "JSON Serialization 2", descripton: 'description') }
 
       before do
         company.employees = [person]
@@ -166,6 +166,34 @@ module HttpApiTools
             expect(limited_serialized[:meta][:included]).to eq 'employer,skills'
             expect(unlimited_serialized[:meta][:included]).to eq 'employer,skills,skills.person'
           end
+
+        end
+      end
+
+      describe "specifiying serializers that work together via the 'group' configuration" do
+
+        let(:serialized) do
+          AlternatePersonSerializer.new(person).includes(:employer, { skills: [:person] }).as_json.with_indifferent_access
+        end
+
+        let(:serialized_person) { serialized[:people].first }
+        let(:serialized_company) { serialized[:linked][:companies].first }
+        let(:serialized_skill) { serialized[:linked][:skills].first }
+
+        it 'serializes the data as specified in collaborating serializer for the group' do
+          expect(serialized_person[:id]).to eq(person.id)
+          expect(serialized_person[:first_name]).to eq(person.first_name)
+          expect(serialized_person[:last_name]).to eq(person.last_name)
+          expect(serialized_person[:full_name]).to be_nil
+          expect(serialized_person[:dob]).to be_nil
+          expect(serialized_person[:email]).to be_nil
+
+          expect(serialized_company[:id]).to eq(person.employer.id)
+          expect(serialized_company[:name]).to eq(person.employer.name)
+          expect(serialized_company[:phone]).to be_nil
+
+          expect(serialized_skill[:id]).to eq person.skills.first.id
+          expect(serialized_skill[:description]).to be_nil
 
         end
       end

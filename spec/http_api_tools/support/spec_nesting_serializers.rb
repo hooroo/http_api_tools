@@ -22,7 +22,7 @@ module HttpApiTools
       include HttpApiTools::Nesting::JsonSerializer
 
       serializes Company
-      attributes :id, :name
+      attributes :id, :name, :phone
       has_many :employees
 
     end
@@ -37,5 +37,36 @@ module HttpApiTools
       has_one :person
 
     end
+
+    class AlternatePersonSerializer
+      include HttpApiTools::Nesting::JsonSerializer
+
+      serializes(Person, group: :alternate)
+      attributes :id, :first_name, :last_name
+      has_one :employer
+      has_many :skills
+
+    end
+
+    class AlternateCompanySerializer
+
+      include HttpApiTools::Nesting::JsonSerializer
+
+      serializes(Company, group: :alternate)
+      attributes :id, :name
+      has_many :employees
+
+    end
+
+
+    class AlternateSkillSerializer
+
+      include HttpApiTools::Nesting::JsonSerializer
+
+      serializes(Skill, group: :alternate)
+      attributes :id, :name
+
+    end
+
   end
 end

@@ -32,6 +32,7 @@ class Company
 
   attribute :id
   attribute :name
+  attribute :phone
   attribute :brand, read_only: true
   has_many :employees
   has_many :suppliers

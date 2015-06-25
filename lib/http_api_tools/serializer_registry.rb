@@ -6,12 +6,13 @@ module HttpApiTools
 
     include Singleton
 
-    def get(type, class_name)
-      registry.fetch(type.to_sym, {})[class_name]
+    def get(type, group, class_name)
+      registry.fetch(type.to_sym, {}).fetch(group, {})[class_name]
     end
 
-    def register(type, class_name, serializer)
-      registry[type.to_sym][class_name] = serializer
+    def register(type, group, class_name, serializer)
+      grouped_serializers = registry[type.to_sym][group] ||= {}
+      grouped_serializers[class_name] = serializer
     end
 
     private

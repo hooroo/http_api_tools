@@ -8,6 +8,7 @@ module HttpApiTools
       serializer_class.class_attribute :_relationships
       serializer_class.class_attribute :_includable
       serializer_class.class_attribute :_serializes
+      serializer_class.class_attribute :_group
 
       serializer_class._attributes = []
       serializer_class._relationships = { has_ones: [], has_manys: [] }
@@ -15,13 +16,19 @@ module HttpApiTools
       serializer_class.extend(self)
     end
 
-    def serializes(klass)
+    def serializes(klass, options = {})
+      group = options[:group] || :default
       self._serializes = klass
-      HttpApiTools::SerializerRegistry.instance.register(serializer_type, klass.name, self)
+      self._group = group
+      HttpApiTools::SerializerRegistry.instance.register(serializer_type, group, klass.name, self)
     end
 
     def serializable_type
       self._serializes
+    end
+
+    def serializer_group
+      self._group
     end
 
     def has_ones

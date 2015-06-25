@@ -77,8 +77,6 @@ module HttpApiTools
       end
     end
 
-    #Return an expanded version of the includes for use in a query.
-    #This api is still pretty rough and likely to change
     def for_query(serializer_class)
       RelationIncludes.new(*ExpandedRelationIncludes.new(self, serializer_class))
     end

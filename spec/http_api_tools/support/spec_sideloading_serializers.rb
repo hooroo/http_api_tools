@@ -37,5 +37,35 @@ module HttpApiTools
       has_one :person
 
     end
+
+    class AlternatePersonSerializer
+      include HttpApiTools::Sideloading::JsonSerializer
+
+      serializes(Person, group: :alternate)
+      attributes :id, :first_name, :last_name
+      has_one :employer
+      has_many :skills
+
+    end
+
+    class AlternateCompanySerializer
+
+      include HttpApiTools::Sideloading::JsonSerializer
+
+      serializes(Company, group: :alternate)
+      attributes :id, :name
+      has_many :employees
+
+    end
+
+
+    class AlternateSkillSerializer
+
+      include HttpApiTools::Sideloading::JsonSerializer
+
+      serializes(Skill, group: :alternate)
+      attributes :id, :name
+
+    end
   end
 end
