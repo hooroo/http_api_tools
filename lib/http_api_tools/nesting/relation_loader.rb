@@ -48,7 +48,10 @@ module HttpApiTools
       end
 
       def serialize_has_many_relations(has_many_hash, attr_name)
-        if related_items = relation_for(attr_name)
+
+        if relation_includes.includes_relation?(attr_name)
+          related_items = Array(relation_for(attr_name))
+
           has_many_hash[attr_name] = related_items.map do |related_item|
             serialize_nested_item_with_includes(related_item, includes_for_attr(attr_name))
           end

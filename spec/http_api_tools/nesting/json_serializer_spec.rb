@@ -169,7 +169,7 @@ module HttpApiTools
             expect(unlimited_serialized[:meta][:included]).to eq 'employer,skills,skills.person'
           end
 
-          context 'with a nil value for an included has_many' do
+          context 'with a nil value for an included belongs_to' do
             before do
               person.employer = nil
             end
@@ -182,12 +182,46 @@ module HttpApiTools
               expect(unlimited_serialized[:people].first[:employer]).to eq(nil)
             end
 
-            it 'does not include the _id representation of the relatioship ' do
+            it 'does not include the _id representation of the relationship ' do
               expect(unlimited_serialized[:people].first).to_not have_key(:employer_id)
             end
-
           end
 
+          context 'with an empty array value for an included has_many' do
+            before do
+              person.skills = []
+            end
+
+            it 'includes the key for the nil relationship' do
+              expect(unlimited_serialized[:people].first).to have_key(:skills)
+            end
+
+            it 'returns the empty relationship as an empty array' do
+              expect(unlimited_serialized[:people].first[:skills]).to eq([])
+            end
+
+            it 'does not include the _ids representation of the relationship ' do
+              expect(unlimited_serialized[:people].first).to_not have_key(:skill_ids)
+            end
+          end
+
+          context 'with a nil value for an included has_many' do
+            before do
+              person.skills = nil
+            end
+
+            it 'includes the key for the nil relationship' do
+              expect(unlimited_serialized[:people].first).to have_key(:skills)
+            end
+
+            it 'returns the empty relationship as an empty array' do
+              expect(unlimited_serialized[:people].first[:skills]).to eq([])
+            end
+
+            it 'does not include the _ids representation of the relationship ' do
+              expect(unlimited_serialized[:people].first).to_not have_key(:skill_ids)
+            end
+          end
         end
       end
 

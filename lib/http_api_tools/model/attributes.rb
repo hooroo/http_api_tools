@@ -36,7 +36,7 @@ module HttpApiTools
       end
 
       def has_many_changed(has_many_name)
-        send("#{has_many_name.to_s.singularize}_ids=", send(has_many_name).map(&:id).compact)
+        send("#{has_many_name.to_s.singularize}_ids=", Array(send(has_many_name)).map(&:id).compact)
       end
 
       private
