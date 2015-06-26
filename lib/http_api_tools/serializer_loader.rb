@@ -3,10 +3,10 @@ module HttpApiTools
 
     def self.preload
 
-      file_names = serializer_paths(Rails.root.join('app', 'serializers'))
+      file_paths = serializer_paths(Rails.root.join('app', 'serializers'))
 
-      file_names.each do |file_name|
-        require file_name
+      file_paths.each do |file_path|
+        require file_path
       end
 
     end

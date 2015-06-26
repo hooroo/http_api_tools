@@ -21,7 +21,6 @@ module HttpApiTools
       end
 
       def serialize
-        assert_id_present(serializable)
         attribute_hash.merge(relation_loader.relation_hash)
       end
 

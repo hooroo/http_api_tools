@@ -120,6 +120,10 @@ module HttpApiTools
         JsonSerializerDsl.apply_to(serializer_class)
       end
 
+      def assert_id_present(serializable_item)
+        raise "serializable items must have an id attribute" unless serializable_item.respond_to?(:id)
+      end
+
     end
   end
 end
