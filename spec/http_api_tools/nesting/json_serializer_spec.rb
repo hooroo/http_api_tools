@@ -44,7 +44,6 @@ module HttpApiTools
             end
 
             it "serializes relationships as ids" do
-
               expect(serialized_person[:employer_id]).to eq person.employer.id
               expect(serialized_person[:skill_ids]).to eq person.skills.map(&:id)
             end
@@ -142,7 +141,7 @@ module HttpApiTools
           let(:unlimited_serialized) { PersonSerializer.new(person).includes(:employer, { skills: [:person] }).as_json.with_indifferent_access }
 
           let(:limited_serialized) do
-            LimitedNestingPersonSerializer.new(person).includes(:employer, { skills: [:person] }).as_json.with_indifferent_access
+            LimitedNestingPersonSerializer.new(person).includes(skills: [:person]).as_json.with_indifferent_access
           end
 
           it "does not limit nesting if not limited in serializer" do
@@ -154,7 +153,11 @@ module HttpApiTools
           end
 
           it "prevents nesting of non-includable relations" do
-            expect(limited_serialized[:skills]).to be_nil
+            expect(limited_serialized[:people][0]).to_not have_key(:employer)
+          end
+
+          it "includes the id of non-includable relations" do
+            expect(limited_serialized[:people][0][:employer_id]).to eq(company.id)
           end
 
           it "includes what is includable in meta" do
@@ -164,6 +167,25 @@ module HttpApiTools
           it "includes what was included in meta" do
             expect(limited_serialized[:meta][:included]).to eq 'skills'
             expect(unlimited_serialized[:meta][:included]).to eq 'employer,skills,skills.person'
+          end
+
+          context 'with a nil value for an included has_many' do
+            before do
+              person.employer = nil
+            end
+
+            it 'includes the key for the nil relationship' do
+              expect(unlimited_serialized[:people].first).to have_key(:employer)
+            end
+
+            it 'returns the nil relationship as nil' do
+              expect(unlimited_serialized[:people].first[:employer]).to eq(nil)
+            end
+
+            it 'does not include the _id representation of the relatioship ' do
+              expect(unlimited_serialized[:people].first).to_not have_key(:employer_id)
+            end
+
           end
 
         end

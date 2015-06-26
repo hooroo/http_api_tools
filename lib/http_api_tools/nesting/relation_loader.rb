@@ -26,8 +26,12 @@ module HttpApiTools
 
         id_attr = "#{attr_name}_id"
 
-        if related_item = relation_for(attr_name)
-          has_one_hash[attr_name] = serialize_nested_item_with_includes(related_item, includes_for_attr(attr_name))
+        if relation_includes.includes_relation?(attr_name)
+          if related_item = relation_for(attr_name)
+            has_one_hash[attr_name] = serialize_nested_item_with_includes(related_item, includes_for_attr(attr_name))
+          else
+            has_one_hash[attr_name] = nil
+          end
         elsif serializable.respond_to?(id_attr)
           has_one_hash[id_attr] = serializable.send(id_attr)
         else
