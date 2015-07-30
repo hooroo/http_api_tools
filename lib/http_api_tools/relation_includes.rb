@@ -38,22 +38,6 @@ module HttpApiTools
       end
     end
 
-    def create_path_matrix(top_level_paths, item, path_attrs = [])
-
-      if item.is_a?(Hash)
-        current_key = item.keys.first
-        path_attrs << current_key
-        top_level_paths << path_attrs
-
-        item[current_key].each do |path_value|
-          create_path_matrix(top_level_paths, path_value, path_attrs.dup)
-        end
-      else
-        top_level_paths << (path_attrs << item)
-      end
-
-    end
-
     def &(other_includes)
       intersected_paths = (to_s.split(',') & other_includes.to_s.split(','))
 
@@ -109,7 +93,21 @@ module HttpApiTools
       includes_hash
     end
 
+    def create_path_matrix(top_level_paths, item, path_attrs = [])
 
+      if item.is_a?(Hash)
+        current_key = item.keys.first
+        path_attrs << current_key
+        top_level_paths << path_attrs
+
+        item[current_key].each do |path_value|
+          create_path_matrix(top_level_paths, path_value, path_attrs.dup)
+        end
+      else
+        top_level_paths << (path_attrs << item)
+      end
+
+    end
 
     # Turns this:
     #
