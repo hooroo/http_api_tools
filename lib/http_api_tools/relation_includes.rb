@@ -1,4 +1,3 @@
-require 'active_support/core_ext'
 require 'http_api_tools/expanded_relation_includes'
 
 # Hopefully the spec is robust enough http_api_tools we can
@@ -30,23 +29,34 @@ module HttpApiTools
     def to_s
       @to_s ||= begin
         paths = []
-        includes.each do |item|
-          if item.is_a? Hash
-            stringify_keys(paths, item)
-          else
-            paths << [item]
-          end
-        end
-        paths = paths.map { |p| p.join('.') }
-        paths.sort.join(',')
+
+        includes.each { |item| create_path_matrix(paths, item, path_attrs = []) }
+
+        joined_paths = paths.map { |p| p.join('.') }
+        joined_paths.sort.join(',')
+
       end
     end
 
-    def &(other_includes)
-      hash = self.class.build_hash_from_string(to_s)
-      other_hash = self.class.build_hash_from_string(other_includes.to_s)
+    def create_path_matrix(top_level_paths, item, path_attrs = [])
 
+      if item.is_a?(Hash)
+        current_key = item.keys.first
+        path_attrs << current_key
+        top_level_paths << path_attrs
+
+        item[current_key].each do |path_value|
+          create_path_matrix(top_level_paths, path_value, path_attrs.dup)
+        end
+      else
+        top_level_paths << (path_attrs << item)
+      end
+
+    end
+
+    def &(other_includes)
       intersected_paths = (to_s.split(',') & other_includes.to_s.split(','))
+
       self.class.from_string(intersected_paths.join(','))
     end
 
@@ -99,19 +109,7 @@ module HttpApiTools
       includes_hash
     end
 
-    def stringify_keys(top_level_paths, hash, path_attrs = [])
-      current_key = hash.keys.first
-      path_attrs << current_key
-      top_level_paths << path_attrs.dup
 
-      hash[current_key].each do |path_value|
-        if path_value.is_a? Hash
-          path_attrs << stringify_keys(top_level_paths, path_value, path_attrs)
-        else
-          top_level_paths << (path_attrs.dup << path_value)
-        end
-      end
-    end
 
     # Turns this:
     #

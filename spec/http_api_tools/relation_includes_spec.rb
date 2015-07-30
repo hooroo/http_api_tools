@@ -99,6 +99,16 @@ module HttpApiTools
             expected: [ :reviews, { images: [{ comments: [:author] }] }, :hashtags ]
           },
           {
+            includes: [ :reviews, :hashtags, { images: [{ comments: [{ author: [:name] }, :foo, :bar] }] }],
+            other:    [ :reviews, :hashtags, { images: [{ comments: [{ author: [:name] }, :foo] }] }],
+            expected: [ :reviews, :hashtags, { images: [{ comments: [{ author: [:name] }, :foo] }] }]
+          },
+          {
+            includes: [:main_image, :customer_ratings, { room_types: [{offers: [:inclusions, :promotion, :cancellation_policy, { charges: [:payable_at_property]}]}]}],
+            other:    [:main_image, :customer_ratings, { room_types: [{offers: [:inclusions, :promotion, :cancellation_policy, { charges: [:payable_at_property]}]}]}],
+            expected: [:main_image, :customer_ratings, { room_types: [{offers: [:inclusions, :promotion, :cancellation_policy, { charges: [:payable_at_property]}]}]}]
+          },
+          {
             includes: [ :reviews, { images: [{ comments: [:author] }] } ],
             other:    [ :reviews, { images: [ :comments ]} ],
             expected: [ :reviews, { images: [ :comments ]} ]
@@ -121,7 +131,10 @@ module HttpApiTools
         ]
       end
 
+      [:customer_ratings, :main_image, {:room_types=>[{:offers=>[:cancellation_policy, {:charges=>[:payable_at_property]}, :inclusions, :promotion]}]}]
+
       it 'reuturns a new RelationIncludes as a deep intersection between two RelationIncludes' do
+        # RelationIncludes.new(:customer_ratings, :main_image, {:room_types=>[{:offers=>[:cancellation_policy, {:charges=>[:payable_at_property]}, :inclusions, :promotion]}]}).to_s
         scenarios.each do |scenario|
           includes = scenario[:includes]
           other    = scenario[:other]
