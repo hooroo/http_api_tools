@@ -9,9 +9,11 @@ module HttpApiTools
       serializer_class.class_attribute :_includable
       serializer_class.class_attribute :_serializes
       serializer_class.class_attribute :_group
+      serializer_class.class_attribute :_exclude_whens
 
       serializer_class._attributes = []
       serializer_class._relationships = { has_ones: [], has_manys: [] }
+      serializer_class._exclude_whens = {}
 
       serializer_class.extend(self)
     end
@@ -40,7 +42,12 @@ module HttpApiTools
     end
 
     def attributes(*args)
-      self._attributes = args
+      args.each {|attr_name| attribute(attr_name) }
+    end
+
+    def attribute(attr_name, exclude_when: nil)
+      self._attributes << attr_name
+      self._exclude_whens[attr_name] = exclude_when unless exclude_when.nil?
     end
 
     def has_one(has_one)
