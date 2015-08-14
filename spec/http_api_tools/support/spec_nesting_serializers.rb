@@ -7,12 +7,33 @@ module HttpApiTools
       include HttpApiTools::Nesting::JsonSerializer
 
       serializes Person
-      attributes :id, :first_name, :last_name, :full_name, :dob, :email
+      attribute :id
+      attribute :first_name
+      attribute :last_name
+      attribute :full_name
+      attribute :dob
+
+      attribute :email, exclude_when: :exclude_email?
+      attribute :tax_file_number, exclude_when: :exclude_tax_file_number?
+      attribute :something_personal, exclude_when: -> (serializable) { true }
+      attribute :something_public, exclude_when: -> (serializable) { false }
+
       has_one :employer
+      has_one :previous_employer, exclude_when: -> (serializable) { true }
       has_many :skills
+      has_many :hidden_talents, exclude_when: -> (serializable) { true }
+
 
       def full_name
         "#{serializable.first_name} #{serializable.last_name}"
+      end
+
+      def exclude_tax_file_number?
+        true
+      end
+
+      def exclude_email?
+        false
       end
 
     end

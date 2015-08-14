@@ -32,7 +32,8 @@ module HttpApiTools
           serializable: serializable,
           has_manys: has_manys,
           has_ones: has_ones,
-          relation_includes: relation_includes
+          relation_includes: relation_includes,
+          excludes: excludes
         })
       end
 

@@ -50,12 +50,14 @@ module HttpApiTools
       self._exclude_whens[attr_name] = exclude_when unless exclude_when.nil?
     end
 
-    def has_one(has_one)
+    def has_one(has_one, exclude_when: nil)
       self.has_ones << has_one
+      self._exclude_whens[has_one] = exclude_when unless exclude_when.nil?
     end
 
-    def has_many(has_many)
+    def has_many(has_many, exclude_when: nil)
       self.has_manys << has_many
+      self._exclude_whens[has_many] = exclude_when unless exclude_when.nil?
     end
 
     def includable(*includes)

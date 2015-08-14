@@ -56,6 +56,8 @@ module HttpApiTools
 
         has_ones.each do |attr_name|
 
+          break if excludes[attr_name]
+
           id_attr = "#{attr_name}_id"
 
           #Use id attr if possible as it's cheaper than referencing the object
@@ -79,6 +81,7 @@ module HttpApiTools
         has_many_hash = {}
 
         has_manys.each do |attr_name|
+          break if excludes[attr_name]
           has_many_relation = serializable.send(attr_name) || []
           has_many_hash[attr_name] = has_many_relation.map(&:id)
         end
@@ -96,7 +99,8 @@ module HttpApiTools
           identity_map: identity_map,
           type_key_resolver: type_key_resolver,
           result: result,
-          serializer_group: serializer_group
+          serializer_group: serializer_group,
+          excludes: excludes
         )
       end
 

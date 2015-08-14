@@ -11,6 +11,7 @@ module HttpApiTools
         @result = opts[:result]
         @identity_map = opts[:identity_map]
         @type_key_resolver = opts[:type_key_resolver]
+        @excludes = opts[:excludes]
       end
 
       def sideload_relations
@@ -27,11 +28,12 @@ module HttpApiTools
 
       private
 
-      attr_reader :serializer_group, :serializable, :has_ones, :has_manys, :relation_includes, :identity_map, :type_key_resolver, :result
+      attr_reader :serializer_group, :serializable, :has_ones, :has_manys, :relation_includes, :identity_map, :type_key_resolver, :result, :excludes
 
       def sideload_has_ones
 
         has_ones.each do |attr_name|
+          break if excludes[attr_name]
           if related_item = relation_for(attr_name)
             type_key = type_key_for(related_item)
             sideload_item(related_item, attr_name, type_key) unless identity_map.get(type_key, related_item.id)
@@ -42,7 +44,7 @@ module HttpApiTools
       def sideload_has_manys
 
         has_manys.each do |attr_name|
-
+          break if excludes[attr_name]
           if related_items = relation_for(attr_name)
             type_key = nil
             related_items.each do |related_item|

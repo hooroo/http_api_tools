@@ -12,15 +12,22 @@ class Person
   attribute :first_name
   attribute :last_name
   attribute :dob
-  attribute :email
+  attribute :email, exclude_when: :exclude_email?
+  attribute :tax_file_number
+  attribute :something_personal
+  attribute :something_public
   belongs_to :employer
+  belongs_to :previous_employer
   has_many :skills
+  has_many :hidden_talents
 
   #Act like active record for reflectively interogating type info
   def self.reflections
     {
       employer: OpenStruct.new(class_name: 'Company'),
-      skills: OpenStruct.new(class_name: 'Skill')
+      previous_employer: OpenStruct.new(class_name: 'Company'),
+      skills: OpenStruct.new(class_name: 'Skill'),
+      hidden_talents: OpenStruct.new(class_name: 'Skill')
     }
   end
 

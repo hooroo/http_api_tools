@@ -13,7 +13,7 @@ module HttpApiTools
         let(:includes) { [:employer, :skills] }
 
         it "expands includes to include has_many relationships defined by serializers but not in original includes" do
-          expect(expanded_includes.to_a).to eq([{ employer: [:employees] }, :skills])
+          expect(expanded_includes.to_a).to eq([:hidden_talents, { employer: [:employees] }, :skills])
         end
       end
 
@@ -22,7 +22,7 @@ module HttpApiTools
         let(:includes) { [:employer, { skills: [:person] }] }
 
         it "expands includes to include has_many relationships defined by serializers but not in original includes" do
-          expect(expanded_includes.to_a).to eq([{ employer: [:employees] }, { skills: [{ person: [:skills] }] }])
+          expect(expanded_includes.to_a).to eq([:hidden_talents, { employer: [:employees] }, { skills: [{ person: [:skills, :hidden_talents] }] }])
         end
       end
 

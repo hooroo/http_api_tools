@@ -9,14 +9,19 @@ module HttpApiTools
     describe JsonSerializer do
 
       let(:company) { Company.new(id: 1, name: 'Hooroo', phone: '555010101') }
-      let(:person) { Person.new(id: 2, first_name: 'Rob', last_name: 'Monie', dob: '1976-01-01', email: 'rob@example.com') }
+      let(:previous_company) { Company.new(id: 2, name: 'Not Hooroo', phone: '555010102') }
+      let(:person) { Person.new(id: 2, first_name: 'Rob', last_name: 'Monie', dob: '1976-01-01', email: 'rob@example.com', tax_file_number: '123456789', something_personal: 'shhhh', something_public: 'hello') }
       let(:skill) { Skill.new(id: 3, name: "JSON Serialization", descripton: 'description') }
       let(:skill2) { Skill.new(id: 4, name: "JSON Serialization 2", descripton: 'description') }
+      let(:hidden_talent) { Skill.new(id: 5, name: "XRay Vision") }
 
       before do
         company.employees = [person]
         person.employer = company
+        person.previous_employer = previous_company
         person.skills = [skill, skill2]
+        person.hidden_talents = [hidden_talent]
+        hidden_talent.person = person
         skill.person = person
         skill2.person = person
       end
@@ -222,6 +227,41 @@ module HttpApiTools
               expect(unlimited_serialized[:people].first).to_not have_key(:skill_ids)
             end
           end
+        end
+
+        describe "dynamically excluding attributes" do
+
+          let(:serializer) { PersonSerializer.new(person) }
+
+          it 'excludes when referenced exclude_when method returns true' do
+            expect(serializer.serialize).to_not have_key(:tax_file_number)
+          end
+
+          it 'does not exclude when referenced exclude_when method returns false' do
+            expect(serializer.serialize[:email]).to eq(person.email)
+          end
+
+          it 'excludes when exclude_when proc returns true' do
+            expect(serializer.serialize).to_not have_key(:something_personal)
+          end
+
+          it 'does not exclude when exclude_when proc returns false' do
+            expect(serializer.serialize[:something_public]).to eq(person.something_public)
+          end
+        end
+
+        describe "dynamically excluding relationships" do
+
+          let(:serializer) { PersonSerializer.new(person) }
+
+          it 'excludes has_one when exclude_when returns true' do
+            expect(serializer.includes(:previous_employer).serialize).to_not have_key(:previous_employer)
+          end
+
+          it 'excludes has_many when exclude_when returns true' do
+            expect(serializer.includes(:hidden_talents).serialize).to_not have_key(:hidden_talents)
+          end
+
         end
       end
 

@@ -200,7 +200,7 @@ module HttpApiTools
 
       it "creates includes for included relationships and has_many relationships for fetching ids" do
         expect(includes.find(:employer)).to eq({ employer: [:employees] })
-        expect(includes.find(:skills)).to eq({ skills: [{ person: [:skills] }] })
+        expect(includes.find(:skills)).to eq({ skills: [{ person: [:skills, :hidden_talents] }] })
       end
 
     end

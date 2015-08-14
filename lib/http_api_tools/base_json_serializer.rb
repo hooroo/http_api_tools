@@ -24,10 +24,12 @@ module HttpApiTools
       attribute_hash = {}
 
       attributes.each do |attr_name|
-        if self.respond_to?(attr_name)
-          attribute_hash[attr_name] = self.send(attr_name)
-        else
-          attribute_hash[attr_name] = serializable.send(attr_name)
+        unless exclude?(attr_name)
+          if self.respond_to?(attr_name)
+            attribute_hash[attr_name] = self.send(attr_name)
+          else
+            attribute_hash[attr_name] = serializable.send(attr_name)
+          end
         end
       end
 
@@ -74,6 +76,10 @@ module HttpApiTools
       self.class._includable
     end
 
+    def exclude_whens
+      self.class._exclude_whens
+    end
+
     protected
 
     attr_accessor :identity_map
@@ -97,6 +103,29 @@ module HttpApiTools
 
     def serializer_group
       self.class.serializer_group
+    end
+
+    def excludes
+      @excludes ||= begin
+        exclude_whens.keys.inject({}) do |result, attr_name|
+          result[attr_name] = exclude?(attr_name)
+          result
+        end
+      end
+    end
+
+    def exclude?(attr_name)
+      exclude_when = exclude_whens[attr_name]
+
+      if exclude_when.nil?
+        false
+      elsif exclude_when.is_a?(Symbol)
+        send(exclude_when)
+      elsif exclude_when.is_a?(Proc)
+        exclude_when.call(serializable)
+      else
+        raise "Attribute exclude_when must be configured with a symbol (method name) or a proc."
+      end
     end
 
   end

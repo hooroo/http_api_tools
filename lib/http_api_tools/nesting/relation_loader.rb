@@ -8,6 +8,7 @@ module HttpApiTools
         @has_ones = opts[:has_ones]
         @has_manys = opts[:has_manys]
         @relation_includes = opts[:relation_includes]
+        @excludes = opts[:excludes]
       end
 
       def relation_hash
@@ -16,10 +17,17 @@ module HttpApiTools
 
       private
 
-      attr_reader :serializer_group, :serializable, :has_ones, :has_manys, :relation_includes
+      attr_reader :serializer_group, :serializable, :has_ones, :has_manys, :relation_includes, :excludes
 
       def has_one_hash
-        has_ones.inject({}) { |has_one_hash, attr_name| serialize_has_one_relation(has_one_hash, attr_name) }
+        has_ones.inject({}) do |has_one_hash, attr_name|
+          if excludes[attr_name]
+            has_one_hash
+          else
+            serialize_has_one_relation(has_one_hash, attr_name)
+          end
+
+        end
       end
 
       def serialize_has_one_relation(has_one_hash, attr_name)
@@ -44,7 +52,13 @@ module HttpApiTools
 
 
       def has_many_hash
-        has_manys.inject({}) { |has_many_hash, attr_name| serialize_has_many_relations(has_many_hash, attr_name) }
+        has_manys.inject({}) do |has_many_hash, attr_name|
+          if excludes[attr_name]
+            has_many_hash
+          else
+            serialize_has_many_relations(has_many_hash, attr_name)
+          end
+        end
       end
 
       def serialize_has_many_relations(has_many_hash, attr_name)
