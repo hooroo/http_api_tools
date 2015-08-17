@@ -24,7 +24,7 @@ module HttpApiTools
       attribute_hash = {}
 
       attributes.each do |attr_name|
-        unless exclude?(attr_name)
+        unless excludes[attr_name]
           if self.respond_to?(attr_name)
             attribute_hash[attr_name] = self.send(attr_name)
           else
