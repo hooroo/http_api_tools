@@ -290,6 +290,38 @@ To help in documenting what is includable, both the includable and included rela
 }
 ```
 
+##### Dynamic attribute and relationship excludes
+Sometimes an attribute or relationship needs to be excluded from the payload based on a runtime condition but it makes sense to define this on the serializer itself so it always applies.  For example, an attribute might be available to a particular caller of the api but not to others.
+
+This can be achieved via the `exclude_when` configuration on attributes or relations.
+
+```ruby
+class UserSerializer
+
+  include HttpApiTools::Nesting::JsonSerializer
+
+  serializes(User)
+
+  attribute :id
+  attribute :username
+  attribute :first_name
+  attribute :last_name
+  attribute :tax_file_number, exclude_when: :exclude_tax_file_number?
+
+  has_many :posts
+  has_many :comments
+  has_one :notes, exclude_when: exclude_when: -> (serializable) { CurrentUser.user_name != serializable.username }
+
+  def exclude_tax_file_number?
+    !CurrentUser.has_role?(:admin) && CurrentUser.user_name != serializable.username
+  end
+
+end
+```
+
+This example shows the tax file number being excluded via the `exclude_tax_file_number?` method when the current user is not the user being serialized.  The second example shows he use of a proc to implemenet the exclusion logic.
+
+
 #### Meta data
 Every request will also contain a special meta attribute which could be augmented with various additional pieces
 of meta-data. At this point, it will always return the `type` and `root_key` for the current request.  Eg:
