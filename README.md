@@ -319,7 +319,7 @@ class UserSerializer
 end
 ```
 
-This example shows the tax file number being excluded via the `exclude_tax_file_number?` method when the current user is not the user being serialized.  The second example shows he use of a proc to implemenet the exclusion logic.
+This example shows the tax file number being excluded via the `exclude_tax_file_number?` method when the current user is not the user being serialized. The second example shows he use of a proc to implemenet the exclusion logic.
 
 
 #### Meta data
@@ -343,7 +343,7 @@ of meta-data. At this point, it will always return the `type` and `root_key` for
 ```
 
 Notice that the root is an array and the root_key a plural. This is the case regardless of whether a single resource
-is being represented or a collection of resources. This is in line with the json-api spec and generally simplifies both serialization and deserialization.
+is being represented or a collection of resources. This was at one time in line with the json-api spec (this has since changed) and generally simplifies both serialization and deserialization.
 
 ##### Adding Metadata
 It might be desirable to add extra metadata to the serialized response. For example, adding information such as limit, offset, what includes are valid etc can be helpful to a client.
