@@ -310,7 +310,7 @@ class UserSerializer
 
   has_many :posts
   has_many :comments
-  has_one :notes, exclude_when: exclude_when: -> (serializable) { CurrentUser.user_name != serializable.username }
+  has_one :notes, exclude_when: -> (serializable) { CurrentUser.user_name != serializable.username }
 
   def exclude_tax_file_number?
     !CurrentUser.has_role?(:admin) && CurrentUser.user_name != serializable.username
