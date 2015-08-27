@@ -122,7 +122,7 @@ module HttpApiTools
       elsif exclude_when.is_a?(Symbol)
         send(exclude_when)
       elsif exclude_when.is_a?(Proc)
-        exclude_when.call(serializable)
+        instance_exec(serializable, &exclude_when)
       else
         raise "Attribute exclude_when must be configured with a symbol (method name) or a proc."
       end

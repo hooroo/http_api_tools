@@ -21,7 +21,7 @@ module HttpApiTools
       has_one :employer
       has_one :previous_employer, exclude_when: -> (serializable) { true }
       has_many :skills
-      has_many :hidden_talents, exclude_when: -> (serializable) { true }
+      has_many :hidden_talents, exclude_when: Proc.new { true }
 
 
       def full_name
