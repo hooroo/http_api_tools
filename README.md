@@ -234,7 +234,7 @@ One benefit to sideloading over nesting resources is that if the same resource i
 ##### Including related resources via the url
 It's possible to determine what resources to include by providing a query string parameter:
 
-`http://example.com/users/1?include?comments,posts.comments`
+`http://example.com/users/1?include=comments,posts.comments`
 
 This can be parsed using:
 
