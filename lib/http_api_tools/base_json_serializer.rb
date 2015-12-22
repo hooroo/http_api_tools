@@ -1,4 +1,3 @@
-
 require "active_support/core_ext/class/attribute"
 require "active_support/json"
 require 'active_support/core_ext/string/inflections'
@@ -15,7 +14,7 @@ module HttpApiTools
       @serializable = serializable
       @relation_includes = attrs[:relation_includes] || RelationIncludes.new
       @result = attrs[:result] || {}
-      @meta_data = { type: root_key.to_s.singularize, root_key: root_key.to_s }
+      @meta_data = { type: root_type, root_key: root_key.to_s }
     end
 
 
@@ -82,6 +81,14 @@ module HttpApiTools
 
     protected
 
+    def root_key
+      @@_root_key ||= self.class._serializes.name.split("::").last.underscore.pluralize.to_sym
+    end
+
+    def root_type
+      @@_root_type ||= root_key.to_s.singularize
+    end
+
     attr_accessor :identity_map
 
     private
@@ -89,10 +96,6 @@ module HttpApiTools
     attr_writer :relation_includes
     attr_reader :type_key_resolver
     attr_accessor :serializer_map, :meta_data
-
-    def root_key
-      @_root_key ||= self.class._serializes.name.split("::").last.underscore.pluralize.to_sym
-    end
 
     def includes_meta_data
       {
