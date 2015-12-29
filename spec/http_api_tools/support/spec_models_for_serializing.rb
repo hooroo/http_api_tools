@@ -46,6 +46,8 @@ class Company
   belongs_to :parent_company
   belongs_to :address
 
+  with_indifferent_access(true)
+
 
   #Act like active record for reflectively interogating type info
   def self.reflections

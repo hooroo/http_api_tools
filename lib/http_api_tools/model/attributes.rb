@@ -20,7 +20,7 @@ module HttpApiTools
 
       def initialize(attrs = {})
 
-        attrs = attrs.with_indifferent_access
+        attrs = attrs.with_indifferent_access if self._with_indifferent_access
 
         attributes.each do |attr_name, attr_options|
           raw_value = attrs[attr_name] == nil ? default_for(attr_options) : attrs[attr_name]
@@ -111,6 +111,9 @@ module HttpApiTools
 
         base.extend(ClassMethods)
         base.send(:attr_accessor, :errors)
+
+        base.class_attribute :_with_indifferent_access
+        base._with_indifferent_access = false
       end
 
       module ClassMethods
@@ -155,7 +158,6 @@ module HttpApiTools
           end
         end
 
-
         def has_many(attr_name, options = {})
 
           self._has_many_relations[attr_name] = options
@@ -174,6 +176,10 @@ module HttpApiTools
             instance_variable_set("@#{ids_attr_name}", value)
           end
 
+        end
+
+        def with_indifferent_access(value)
+          self._with_indifferent_access = value
         end
 
       end

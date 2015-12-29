@@ -10,11 +10,11 @@ module HttpApiTools
 
     attr_reader :serializable, :relation_includes, :result, :meta_data
 
-    def initialize(serializable, attrs = {})
-      @serializable = serializable
-      @relation_includes = attrs[:relation_includes] || RelationIncludes.new
-      @result = attrs[:result] || {}
-      @meta_data = { type: root_type, root_key: root_key.to_s }
+    def initialize(serializable, attrs = nil)
+      @serializable      = serializable
+      @relation_includes = (attrs && attrs[:relation_includes]) || RelationIncludes.new
+      @result            = (attrs && attrs[:result]) || {}
+      @meta_data         = { type: root_type, root_key: root_key.to_s }
     end
 
 
@@ -82,11 +82,11 @@ module HttpApiTools
     protected
 
     def root_key
-      @@_root_key ||= self.class._serializes.name.split("::").last.underscore.pluralize.to_sym
+      @@_root_key ||= self.class._serializes.name.split("::").last.underscore.pluralize.freeze.to_sym
     end
 
     def root_type
-      @@_root_type ||= root_key.to_s.singularize
+      @@_root_type ||= root_key.to_s.singularize.freeze
     end
 
     attr_accessor :identity_map
@@ -101,7 +101,7 @@ module HttpApiTools
       {
         includable: includable.to_s.blank? ? '*' : includable.to_s,
         included: relation_includes.to_s
-      }
+      }.freeze
     end
 
     def serializer_group
