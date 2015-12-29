@@ -23,7 +23,10 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "activesupport", '~> 4.1'
   spec.add_development_dependency 'rspec', '~> 3.1'
   spec.add_development_dependency "pry"
-  spec.add_development_dependency "pry-byebug"
-  spec.add_development_dependency "ruby-prof"
+
+  unless RUBY_PLATFORM == 'java'
+    spec.add_development_dependency "pry-byebug"
+    spec.add_development_dependency "ruby-prof"
+  end
 
 end

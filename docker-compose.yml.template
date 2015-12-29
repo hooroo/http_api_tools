@@ -1,0 +1,22 @@
+app:
+  image: docker-registry.in.jqdev.net/hooroo-base-${RUBY_VERSION}:531
+  environment:
+    TZ: Australia/Melbourne
+    LANG: en_US.UTF-8
+    LC_ALL: en_US.UTF-8
+    LC_CTYPE: en_US.UTF-8
+    HEADLESS: true
+    DOCKER_HOST:
+    BUILDBOX_COMMIT:
+    BUILD_FARM_RUN:
+    # Environments from caller
+    RACK_ENV:
+    RAILS_ENV:
+    TASK:
+    BUILDKITE_BUILD_NUMBER:
+    RSPEC_FORMATTER:
+    BUILDBOX_AGENT_UID:
+    BUILDBOX_AGENT_GID:
+  volumes:
+    - .:/application
+  working_dir: /application

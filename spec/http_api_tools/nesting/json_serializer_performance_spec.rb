@@ -1,8 +1,9 @@
 require 'spec_helper'
 
 module HttpApiTools
-  module Sideloading
+  module Nesting
 
+     #Rudimentary performance profiler - uncomment to run on demand for now
      describe JsonSerializer do
 
        def create_models
@@ -22,18 +23,18 @@ module HttpApiTools
        end
 
        let!(:companies) do
-         profile('sideloaded-models') do
+         profile('nested-models') do
            create_models
          end
        end
 
        it 'serializes', perf: true do
 
-         serialized = profile('sideloaded-serializes') do
+         serialized = profile('nested-serializes') do
            CompanySerializer.new(companies).includes(:employer, {employees: [:skills]}).as_json
          end
 
-         profile('sideloaded-json') do
+         profile('nested-json') do
            JSON.fast_generate(serialized)
          end
        end
