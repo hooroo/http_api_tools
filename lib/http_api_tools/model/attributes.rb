@@ -39,7 +39,7 @@ module HttpApiTools
       end
 
       def has_many_changed(has_many_name)
-        send("#{has_many_name.to_s.singularize}_ids=".freeze, Array(send(has_many_name)).map(&:id).compact)
+        send(ActiveSupport::Inflector.singularize(has_many_name) + "_ids=".freeze, Array(send(has_many_name)).map(&:id).compact)
       end
 
       private
@@ -164,7 +164,8 @@ module HttpApiTools
 
           self._has_many_relations[attr_name] = options
 
-          ids_attr_name = "#{attr_name.to_s.singularize}_ids"
+
+          ids_attr_name = ActiveSupport::Inflector.singularize(attr_name) + "_ids"
           id_setter_method_name = "#{ids_attr_name}="
 
           send(:attr_reader, attr_name)
