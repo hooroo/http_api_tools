@@ -27,7 +27,7 @@ module HttpApiTools
           value = attrs[attr_name.to_s.freeze] if value.nil? && !self._with_indifferent_access
 
           raw_value = value == nil ? default_for(attr_options) : value
-          set_raw_value(attr_name, raw_value, true) unless raw_value == nil
+          set_raw_value(attr_name, attr_options, raw_value, true) unless raw_value == nil
         end
 
         self.errors = attrs[:errors] || {}
@@ -39,20 +39,19 @@ module HttpApiTools
       end
 
       def has_many_changed(has_many_name)
-        send("#{has_many_name.to_s.singularize}_ids=", Array(send(has_many_name)).map(&:id).compact)
+        send("#{has_many_name.to_s.singularize}_ids=".freeze, Array(send(has_many_name)).map(&:id).compact)
       end
 
       private
 
-      def set_raw_value(attr_name, raw_value, apply_if_read_only = false)
+      def set_raw_value(attr_name, attr_def, raw_value, apply_if_read_only = false)
 
-        attr_def = attributes[attr_name]
         value = transformed_value(attr_def[:type], raw_value)
 
         if attr_def[:read_only] && apply_if_read_only
-          instance_variable_set("@#{attr_name}", value)
+          instance_variable_set("@#{attr_name}".freeze, value)
         elsif
-          self.send("#{attr_name}=", value)
+          self.send("#{attr_name}=".freeze, value)
         end
       end
 
@@ -91,12 +90,12 @@ module HttpApiTools
       end
 
       def set_belongs_to_value(attr_name, value)
-        instance_variable_set("@#{attr_name}", value)
-        send("#{attr_name}_id=", value.try(:id))
+        instance_variable_set("@#{attr_name}".freeze, value)
+        send("#{attr_name}_id=".freeze, value.try(:id))
       end
 
       def set_has_many_value(attr_name, value)
-        instance_variable_set("@#{attr_name}", HasManyArray.new(value, self, attr_name))
+        instance_variable_set("@#{attr_name}".freeze, HasManyArray.new(value, self, attr_name))
         has_many_changed(attr_name)
       end
 
