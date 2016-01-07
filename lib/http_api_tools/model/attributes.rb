@@ -26,8 +26,8 @@ module HttpApiTools
           value = attrs[attr_name]
           value = attrs[attr_name.to_s.freeze] if value.nil? && !self._with_indifferent_access
 
-          raw_value = value == nil ? default_for(attr_options) : value
-          set_raw_value(attr_name, attr_options, raw_value, true) unless raw_value == nil
+          raw_value = value.nil? ? default_for(attr_options) : value
+          set_raw_value(attr_name, attr_options, raw_value, true) unless raw_value.nil?
         end
 
         self.errors = attrs[:errors] || {}
