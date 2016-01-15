@@ -32,7 +32,7 @@ module HttpApiTools
 
       def serialize_has_one_relation(has_one_hash, attr_name)
 
-        id_attr = "#{attr_name}_id"
+        id_attr = :"#{attr_name}_id"
 
         if relation_includes.includes_relation?(attr_name)
           if related_item = relation_for(attr_name)

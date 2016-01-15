@@ -49,9 +49,9 @@ module HttpApiTools
         value = transformed_value(attr_def[:type], raw_value)
 
         if attr_def[:read_only] && apply_if_read_only
-          instance_variable_set("@#{attr_name}".freeze, value)
+          instance_variable_set(:"@#{attr_name}", value)
         elsif
-          self.send("#{attr_name}=".freeze, value)
+          self.send(:"#{attr_name}=", value)
         end
       end
 
@@ -90,12 +90,12 @@ module HttpApiTools
       end
 
       def set_belongs_to_value(attr_name, value)
-        instance_variable_set("@#{attr_name}".freeze, value)
-        send("#{attr_name}_id=".freeze, value.try(:id))
+        instance_variable_set(:"@#{attr_name}", value)
+        send(:"#{attr_name}_id=", value.try(:id))
       end
 
       def set_has_many_value(attr_name, value)
-        instance_variable_set("@#{attr_name}".freeze, HasManyArray.new(value, self, attr_name))
+        instance_variable_set(:"@#{attr_name}", HasManyArray.new(value, self, attr_name))
         has_many_changed(attr_name)
       end
 
@@ -145,18 +145,18 @@ module HttpApiTools
 
           self._belongs_to_relations[attr_name] = options
 
-          id_attr_name = "#{attr_name}_id"
-          id_setter_method_name = "#{id_attr_name}="
+          id_attr_name = :"#{attr_name}_id"
+          id_setter_method_name = :"#{id_attr_name}="
 
           send(:attr_reader, attr_name)
           send(:attr_reader, id_attr_name)
 
-          define_method("#{attr_name}=") do |value|
+          define_method(:"#{attr_name}=") do |value|
             set_belongs_to_value(attr_name, value)
           end
 
           define_method(id_setter_method_name) do |value|
-            instance_variable_set("@#{id_attr_name}", value)
+            instance_variable_set(:"@#{id_attr_name}", value)
           end
         end
 
@@ -166,17 +166,17 @@ module HttpApiTools
 
 
           ids_attr_name = ActiveSupport::Inflector.singularize(attr_name) + "_ids"
-          id_setter_method_name = "#{ids_attr_name}="
+          id_setter_method_name = :"#{ids_attr_name}="
 
           send(:attr_reader, attr_name)
           send(:attr_reader, ids_attr_name)
 
-          define_method("#{attr_name}=") do |value|
+          define_method(:"#{attr_name}=") do |value|
             set_has_many_value(attr_name, value)
           end
 
           define_method(id_setter_method_name) do |value|
-            instance_variable_set("@#{ids_attr_name}", value)
+            instance_variable_set(:"@#{ids_attr_name}", value)
           end
 
         end
