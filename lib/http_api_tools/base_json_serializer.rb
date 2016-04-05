@@ -4,9 +4,11 @@ require 'active_support/core_ext/string/inflections'
 require_relative 'relation_includes'
 require_relative 'identity_map'
 require_relative 'type_key_resolver'
+require_relative 'root_keyable'
 
 module HttpApiTools
   module BaseJsonSerializer
+    include RootKeyable
 
     attr_reader :serializable, :relation_includes, :result, :meta_data
 
@@ -78,25 +80,6 @@ module HttpApiTools
     end
 
     protected
-
-    def class_variable_memoize(key, &block)
-      unless self.class.class_variable_defined?(key)
-        self.class.class_variable_set(key, block.call)
-      end
-      self.class.class_variable_get(key)
-    end
-
-    def root_key
-      class_variable_memoize(:@@root_key) do
-        self.class._serializes.name.split("::").last.underscore.pluralize.freeze.to_sym
-      end
-    end
-
-    def root_type
-      class_variable_memoize(:@@root_type) do
-        self.class.class_variable_set(:@@root_type, root_key.to_s.singularize.freeze)
-      end
-    end
 
     attr_accessor :identity_map
 
