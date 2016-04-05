@@ -17,7 +17,6 @@ module HttpApiTools
       @meta_data         = { type: root_type, root_key: root_key.to_s }
     end
 
-
     def attribute_hash
 
       attribute_hash = {}
@@ -35,7 +34,6 @@ module HttpApiTools
       attribute_hash
 
     end
-
 
     def to_json(*args)
       JSON.fast_generate(as_json)
@@ -81,18 +79,23 @@ module HttpApiTools
 
     protected
 
-    def root_key
-      unless self.class.class_variable_defined?(:@@root_key)
-        self.class.class_variable_set(:@@root_key, self.class._serializes.name.split("::").last.underscore.pluralize.freeze.to_sym)
+    def class_variable_memoize(key, &block)
+      unless self.class.class_variable_defined?(key)
+        self.class.class_variable_set(key, block.call)
       end
-      self.class.class_variable_get(:@@root_key)
+      self.class.class_variable_get(key)
+    end
+
+    def root_key
+      class_variable_memoize(:@@root_key) do
+        self.class._serializes.name.split("::").last.underscore.pluralize.freeze.to_sym
+      end
     end
 
     def root_type
-      unless self.class.class_variable_defined?(:@@root_type)
+      class_variable_memoize(:@@root_type) do
         self.class.class_variable_set(:@@root_type, root_key.to_s.singularize.freeze)
       end
-      self.class.class_variable_get(:@@root_type)
     end
 
     attr_accessor :identity_map
