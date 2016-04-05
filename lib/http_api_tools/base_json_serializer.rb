@@ -82,11 +82,17 @@ module HttpApiTools
     protected
 
     def root_key
-      @@_root_key ||= self.class._serializes.name.split("::").last.underscore.pluralize.freeze.to_sym
+      unless self.class.class_variable_defined?(:@@root_key)
+        self.class.class_variable_set(:@@root_key, self.class._serializes.name.split("::").last.underscore.pluralize.freeze.to_sym)
+      end
+      self.class.class_variable_get(:@@root_key)
     end
 
     def root_type
-      @@_root_type ||= root_key.to_s.singularize.freeze
+      unless self.class.class_variable_defined?(:@@root_type)
+        self.class.class_variable_set(:@@root_type, root_key.to_s.singularize.freeze)
+      end
+      self.class.class_variable_get(:@@root_type)
     end
 
     attr_accessor :identity_map
