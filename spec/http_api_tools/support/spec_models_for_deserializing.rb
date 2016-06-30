@@ -3,6 +3,13 @@
 require 'http_api_tools/model'
 require 'ostruct'
 
+class Coffee
+  include HttpApiTools::Model::Attributes
+
+  attribute :id
+  attribute :name
+end
+
 module ForDeserializing
   class Person
 

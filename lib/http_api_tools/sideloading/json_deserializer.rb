@@ -17,7 +17,7 @@ module HttpApiTools
         @identity_map = IdentityMap.new
         @sideload_map = SideloadMap.new(json, root_key)
         @key_to_class_mappings = {}
-        @namespace = opts[:namespace]
+        @namespace = opts[:namespace] || NullNamespace.new
       end
 
       def deserialize
@@ -136,6 +136,11 @@ module HttpApiTools
         nil
       end
 
+      class NullNamespace
+        def name
+          nil
+        end
+      end
 
     end
   end
