@@ -117,6 +117,10 @@ module HttpApiTools
             Object.const_set "Company", klass
           end
 
+          after do
+            Object.send(:remove_const, :Company)
+          end
+
           it "creates model from the root object" do
             expect(company.id).to eq json['companies'][0]['id']
           end
