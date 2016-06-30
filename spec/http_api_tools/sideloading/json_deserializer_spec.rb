@@ -43,9 +43,8 @@ module HttpApiTools
 
       end
 
-      let(:namespace) { ForDeserializing }
       let(:company) do
-        JsonDeserializer.new(json, namespace: namespace).deserialize.first
+        JsonDeserializer.new(json, namespace: ForDeserializing).deserialize.first
       end
 
       describe "basic deserialization" do
