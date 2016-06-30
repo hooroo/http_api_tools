@@ -43,8 +43,9 @@ module HttpApiTools
 
       end
 
+      let(:namespace) { ForDeserializing }
       let(:company) do
-        JsonDeserializer.new(json, namespace: ForDeserializing ).deserialize.first
+        JsonDeserializer.new(json, namespace: namespace).deserialize.first
       end
 
       describe "basic deserialization" do
@@ -91,6 +92,35 @@ module HttpApiTools
           expect(company.parent_company_id).to eql 40
         end
 
+      end
+
+      context 'when namespace is nil' do
+        let(:namespace) { nil }
+        let(:json) do
+          {
+            'meta' => {
+              'type' => 'company',
+              'root_key' => 'companies'
+            },
+            'companies' => [{
+              'id' => 2,
+              'name' => "Hooroo",
+              'brand' => "We are travellers or something"
+            }],
+            'linked' => {}
+          }
+        end
+
+        describe 'basic deserialization' do
+          before do
+            klass = Class.new(ForDeserializing::Company)
+            Object.const_set "Company", klass
+          end
+
+          it "creates model from the root object" do
+            expect(company.id).to eq json['companies'][0]['id']
+          end
+        end
       end
     end
   end
