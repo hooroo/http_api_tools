@@ -96,33 +96,29 @@ module HttpApiTools
 
       context 'when namespace is nil' do
         let(:namespace) { nil }
+        let(:coffee_name) { "Flavour Country" }
         let(:json) do
           {
             'meta' => {
-              'type' => 'company',
-              'root_key' => 'companies'
+              'type' => 'coffee',
+              'root_key' => 'coffees'
             },
-            'companies' => [{
+            'coffees' => [{
               'id' => 2,
-              'name' => "Hooroo",
-              'brand' => "We are travellers or something"
+              'name' => coffee_name
             }],
             'linked' => {}
           }
         end
 
+        let(:coffee) do
+          JsonDeserializer.new(json).deserialize.first
+        end
+
         describe 'basic deserialization' do
-          before do
-            klass = Class.new(ForDeserializing::Company)
-            Object.const_set "Company", klass
-          end
-
-          after do
-            Object.send(:remove_const, :Company)
-          end
-
           it "creates model from the root object" do
-            expect(company.id).to eq json['companies'][0]['id']
+            expect(coffee.id).to eq json['coffees'][0]['id']
+            expect(coffee.name).to eq coffee_name
           end
         end
       end
