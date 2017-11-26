@@ -5,7 +5,7 @@ app:
     LANG: en_US.UTF-8
     LC_ALL: en_US.UTF-8
     LC_CTYPE: en_US.UTF-8
-    HEADLESS: true
+    HEADLESS: "true"
     DOCKER_HOST:
     BUILDBOX_COMMIT:
     BUILD_FARM_RUN:
