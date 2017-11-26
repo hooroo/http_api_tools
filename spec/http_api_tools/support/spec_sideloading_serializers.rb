@@ -12,6 +12,7 @@ module HttpApiTools
       attribute :last_name
       attribute :full_name
       attribute :dob
+      attribute :created_at
 
       attribute :email, exclude_when: :exclude_email?
       attribute :tax_file_number, exclude_when: :exclude_tax_file_number?

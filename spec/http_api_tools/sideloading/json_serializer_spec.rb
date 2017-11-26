@@ -10,7 +10,7 @@ module HttpApiTools
 
       let(:company) { Company.new(id: 1, name: 'Hooroo', phone: '555010101') }
       let(:previous_company) { Company.new(id: 2, name: 'Not Hooroo', phone: '555010102') }
-      let(:person) { Person.new(id: 2, first_name: 'Rob', last_name: 'Monie', dob: '1976-01-01', email: 'rob@example.com', tax_file_number: '123456789', something_personal: 'shhhh', something_public: 'hello') }
+      let(:person) { Person.new(id: 2, first_name: 'Rob', last_name: 'Monie', dob: '1976-01-01', email: 'rob@example.com', tax_file_number: '123456789', something_personal: 'shhhh', something_public: 'hello', created_at: Time.now) }
       let(:skill) { Skill.new(id: 3, name: "JSON Serialization", descripton: 'description') }
       let(:skill2) { Skill.new(id: 4, name: "JSON Serialization 2", descripton: 'description') }
       let(:hidden_talent) { Skill.new(id: 5, name: "XRay Vision") }
@@ -34,17 +34,28 @@ module HttpApiTools
             let(:serialized) { PersonSerializer.new(person).as_json.with_indifferent_access }
             let(:serialized_person) { serialized[:people].first }
 
-            it "serializes basic attributes" do
-              expect(serialized_person[:id]).to eql person.id
-              expect(serialized_person[:first_name]).to eql person.first_name
-              expect(serialized_person[:last_name]).to eql person.last_name
+
+            describe 'basic attributes' do
+              context 'that are json primatives' do
+                it "serializes them" do
+                  expect(serialized_person[:id]).to eql person.id
+                  expect(serialized_person[:first_name]).to eql person.first_name
+                  expect(serialized_person[:last_name]).to eql person.last_name
+                end
+              end
+
+              context 'that are non json primatives' do
+                it 'calls that objects as_json to serialize it' do
+                  expect(serialized_person[:created_at]).to eql(person.created_at.as_json)
+                end
+              end
             end
 
             it 'expect basic attributes with no value' do
               expect(serialized_person).to have_key(:dob)
             end
-
-            it "serializes attributes defined as methods on the serializer" do
+          
+            it "serializes attributes defined as methods on the serialize" do
               expect(serialized_person[:full_name]).to eql "#{person.first_name} #{person.last_name}"
             end
 

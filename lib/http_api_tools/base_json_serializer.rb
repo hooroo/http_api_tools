@@ -28,7 +28,7 @@ module HttpApiTools
           if self.respond_to?(attr_name)
             attribute_hash[attr_name] = self.send(attr_name)
           else
-            attribute_hash[attr_name] = serializable.send(attr_name)
+            attribute_hash[attr_name] = serializable.send(attr_name).as_json
           end
         end
       end

@@ -12,6 +12,7 @@ class Person
   attribute :first_name
   attribute :last_name
   attribute :dob
+  attribute :created_at
   attribute :email, exclude_when: :exclude_email?
   attribute :tax_file_number
   attribute :something_personal
