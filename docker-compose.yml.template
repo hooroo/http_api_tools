@@ -1,11 +1,11 @@
 app:
-  image: docker-registry.in.jqdev.net/hooroo-base-${RUBY_VERSION}:531
+  image: 730011650125.dkr.ecr.ap-southeast-2.amazonaws.com/hooroo-base-${RUBY_VERSION}:stable
   environment:
     TZ: Australia/Melbourne
     LANG: en_US.UTF-8
     LC_ALL: en_US.UTF-8
     LC_CTYPE: en_US.UTF-8
-    HEADLESS: true
+    HEADLESS: "true"
     DOCKER_HOST:
     BUILDBOX_COMMIT:
     BUILD_FARM_RUN:
