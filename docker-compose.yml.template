@@ -1,22 +1,18 @@
 app:
-  image: 730011650125.dkr.ecr.ap-southeast-2.amazonaws.com/hooroo-base-${RUBY_VERSION}:stable
+  image: ${REPO_URL}/${REPO_NAME}:${IMAGE_TAG}
   environment:
     TZ: Australia/Melbourne
     LANG: en_US.UTF-8
     LC_ALL: en_US.UTF-8
     LC_CTYPE: en_US.UTF-8
     HEADLESS: 'true'
-    DOCKER_HOST:
-    BUILDBOX_COMMIT:
-    BUILD_FARM_RUN:
+    BUILDKITE_COMMIT:
+    BUILDKITE_BUILD_NUMBER:
     # Environments from caller
     RACK_ENV:
     RAILS_ENV:
-    TASK:
-    BUILDKITE_BUILD_NUMBER:
     RSPEC_FORMATTER:
-    BUILDBOX_AGENT_UID:
-    BUILDBOX_AGENT_GID:
+    TASK:
   volumes:
     - .:/application
   working_dir: /application

@@ -1,6 +1,6 @@
-# encoding: utf-8
+source 'https://repositories.services.jqdev.net/repository/rubygems/'
 
-source 'https://rubygems.org'
-
-# Specify your gem's dependencies in http_api_tools.gemspec
 gemspec
+
+gem 'gem_publisher', '~> 0.1.22'
+

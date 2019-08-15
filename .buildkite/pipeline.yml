@@ -1,0 +1,40 @@
+env:
+  RAILS_ENV: "test"
+  RACK_ENV: "test"
+  REPO_URL: "730011650125.dkr.ecr.ap-southeast-2.amazonaws.com"
+  REPO_NAME: "base/ruby"
+  IMAGE_TAG: "2.6.1-builder-20190319"
+
+steps:
+  - label: 'Specs'
+    command: 
+      - bundle install
+      - bundle exec rake
+    agents:
+      - "ci-env=production"
+    plugins:
+      docker-compose#v3.0.0:
+        run: app
+
+  - label: 'Performance'
+    command: 
+      - bundle install
+      - bundle exec rake perf
+    agents:
+      - "ci-env=production"
+    plugins:
+      docker-compose#v3.0.0:
+        run: app
+
+  - wait
+
+  - label: 'Publish Internally'
+    command:
+      - bundle install
+      - bundle exec rake publish:internal PATCH_VERSION=$BUILDKITE_BUILD_NUMBER
+    agents:
+      - "ci-env=production"
+    plugins:
+      docker-compose#v3.0.0:
+        run: app
+    branches: "master"
