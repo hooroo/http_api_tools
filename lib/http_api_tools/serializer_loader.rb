@@ -13,6 +13,7 @@ module HttpApiTools
 
     def self.serializer_paths(directory)
       directory = directory.to_s
+      return [] unless Dir.exists?(directory)
       file_names = Dir.entries(directory).select { |file_name| file_name.end_with?('serializer.rb') }
 
       relevant_dir_path = directory.split('app/serializers/')[1] || ""
