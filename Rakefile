@@ -1,4 +1,5 @@
-require "bundler/gem_tasks"
+require 'bundler/gem_tasks'
+require 'gem_publisher'
 require 'rspec/core/rake_task'
 
 task :default => :spec
